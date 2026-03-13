@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block titulo %}Memoria - Cerebro IA{% endblock %}
+{% block conteudo %}
+<div class="app-layout">
+  {% include 'sidebar.html' %}
+  <main class="main-content">
+    <div class="dash-header">
+      <div>
+        <h1>🧠 Memoria da IA</h1>
+        <p>O que o Cerebro IA sabe sobre voce. Ele usa isso para personalizar as respostas.</p>
+      </div>
+      <button onclick="abrirModalMem()" class="btn-primary">+ Adicionar</button>
+    </div>
+
+    {% if cats %}
+    {% for cat, mems in cats.items() %}
+    <div class="dash-section">
+      <h2>{{ cat|capitalize }}</h2>
+      <div class="mem-grid">
+        {% for m in mems %}
+        <div class="mem-card" id="mem-{{ m.id }}">
+          <div class="mem-chave">{{ m.chave }}</div>
+          <div class="mem-valor">{{ m.valor }}</div>
+          <div class="mem-footer">
+            <span class="mem-data">{{ m.atualizado_em.strftime('%d/%m/%Y') }}</span>
+            <div class="mem-acoes">
+              <button onclick="editarMem({{ m.id }}, '{{ m.chave|replace("'","\\'")|replace('"','\\"') }}', '{{ m.valor|replace("'","\\'")|replace('"','\\"') }}', '{{ m.categoria }}')" title="Editar">✏️</button>
+              <button onclick="deletarMem({{ m.id }})" title="Deletar">🗑️</button>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div>🧠</div>
+      <h3>Nenhuma memoria salva ainda</h3>
+      <p>A IA aprende sobre voce automaticamente durante as conversas, ou voce pode adicionar manualmente.</p>
+    </div>
+    {% endif %}
+
+    <div class="info-box">
+      <strong>💡 Como funciona?</strong><br>
+      Ao conversar, o Cerebro IA detecta automaticamente informacoes importantes (nome, projetos, interesses) e salva aqui.
+      Voce tambem pode adicionar e editar manualmente. Essas informacoes sao usadas para personalizar as respostas.
+    </div>
+  </main>
+</div>
+
+<div id="modalMem" class="modal-overlay" style="display:none" onclick="fecharModalMem()">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:460px">
+    <h3>Salvar informacao</h3>
+    <input type="hidden" id="memEditId">
+    <div class="form-group"><label>O que voce quer que eu lembre?</label><input type="text" id="memChave" placeholder="Ex: nome, projeto, interesse..."></div>
+    <div class="form-group" style="margin-top:14px"><label>Valor</label><input type="text" id="memValor" placeholder="Ex: Leandro, site de vendas, empreendedorismo..."></div>
+    <div class="form-group" style="margin-top:14px"><label>Categoria</label>
+      <select id="memCat" style="background:var(--bg3);border:1.5px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;font-size:14px;width:100%">
+        <option value="perfil">Perfil</option>
+        <option value="projetos">Projetos</option>
+        <option value="interesses">Interesses</option>
+        <option value="negocio">Negocio</option>
+        <option value="geral">Geral</option>
+      </select>
+    </div>
+    <div class="modal-btns" style="margin-top:20px">
+      <button onclick="fecharModalMem()" class="btn-outline">Cancelar</button>
+      <button onclick="salvarMem()" class="btn-primary">Salvar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let memEditId = null;
+function abrirModalMem() {
+  memEditId = null;
+  document.getElementById('memEditId').value = '';
+  document.getElementById('memChave').value = '';
+  document.getElementById('memValor').value = '';
+  document.getElementById('memCat').value = 'geral';
+  document.getElementById('modalMem').style.display = 'flex';
+}
+function editarMem(id, chave, valor, cat) {
+  memEditId = id;
+  document.getElementById('memEditId').value = id;
+  document.getElementById('memChave').value = chave;
+  document.getElementById('memValor').value = valor;
+  document.getElementById('memCat').value = cat;
+  document.getElementById('modalMem').style.display = 'flex';
+}
+function fecharModalMem() { document.getElementById('modalMem').style.display = 'none'; }
+async function salvarMem() {
+  const chave = document.getElementById('memChave').value.trim();
+  const valor = document.getElementById('memValor').value.trim();
+  if (!chave || !valor) { alert('Preencha todos os campos!'); return; }
+  const r = await fetch('/api/memoria/salvar', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ chave, valor, categoria: document.getElementById('memCat').value })
+  });
+  if (r.ok) { fecharModalMem(); location.reload(); }
+}
+async function deletarMem(id) {
+  if (!confirm('Deletar esta memoria?')) return;
+  const r = await fetch(`/api/memoria/deletar/${id}`, { method: 'DELETE' });
+  if (r.ok) document.getElementById('mem-' + id).remove();
+}
+</script>
+{% endblock %}

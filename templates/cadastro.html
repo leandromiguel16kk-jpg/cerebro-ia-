@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titulo %}Criar conta - Cerebro IA{% endblock %}
+{% block conteudo %}
+<div class="auth-page">
+  <div class="auth-logo"><a href="{{ url_for('index') }}">🧠 Cerebro IA</a></div>
+  <div class="auth-card">
+    <h1>Criar conta</h1>
+    <p class="auth-sub">Comece a usar sua super IA gratuitamente</p>
+    <form method="POST" class="auth-form">
+      <div class="form-group"><label>Nome completo *</label><input type="text" name="nome" placeholder="Seu nome" required autofocus></div>
+      <div class="form-group"><label>Email *</label><input type="email" name="email" placeholder="seu@email.com" required></div>
+      <div class="form-group"><label>Senha *</label><input type="password" name="senha" placeholder="Minimo 6 caracteres" required minlength="6"></div>
+      <div class="form-group"><label>Confirmar senha *</label><input type="password" name="confirmar" placeholder="Repita a senha" required></div>
+      <button type="submit" class="btn-primary btn-full">Criar conta gratis</button>
+    </form>
+    <p class="auth-link">Ja tem conta? <a href="{{ url_for('login') }}">Entrar</a></p>
+  </div>
+</div>
+{% endblock %}

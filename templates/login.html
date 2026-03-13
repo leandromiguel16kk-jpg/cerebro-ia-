@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titulo %}Entrar - Cerebro IA{% endblock %}
+{% block conteudo %}
+<div class="auth-page">
+  <div class="auth-logo"><a href="{{ url_for('index') }}">🧠 Cerebro IA</a></div>
+  <div class="auth-card">
+    <h1>Bem-vindo de volta!</h1>
+    <p class="auth-sub">Entre para continuar usando sua IA</p>
+    <form method="POST" class="auth-form">
+      <div class="form-group"><label>Email</label><input type="email" name="email" placeholder="seu@email.com" required autofocus></div>
+      <div class="form-group"><label>Senha</label><input type="password" name="senha" placeholder="Sua senha" required></div>
+      <button type="submit" class="btn-primary btn-full">Entrar</button>
+    </form>
+    <p class="auth-link">Nao tem conta? <a href="{{ url_for('cadastro') }}">Criar conta gratis</a></p>
+  </div>
+</div>
+{% endblock %}

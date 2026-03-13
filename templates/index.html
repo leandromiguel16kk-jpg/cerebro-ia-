@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block titulo %}Cerebro IA - Sua Super IA{% endblock %}
+{% block conteudo %}
+<div class="landing">
+  <nav class="nav-top">
+    <div class="nav-logo">🧠 Cerebro IA</div>
+    <div class="nav-links">
+      <a href="{{ url_for('login') }}" class="btn-outline">Entrar</a>
+      <a href="{{ url_for('cadastro') }}" class="btn-primary">Criar conta gratis</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">🚀 IA completa e poderosa</div>
+      <h1>Conheça o <span class="gradient-text">Cerebro IA</span></h1>
+      <p class="hero-sub">Uma super inteligencia artificial que responde perguntas, analisa imagens e arquivos, entende voz e conversa naturalmente em portugues.</p>
+      <div class="hero-btns">
+        <a href="{{ url_for('cadastro') }}" class="btn-primary btn-lg">Comecar agora →</a>
+        <a href="{{ url_for('login') }}" class="btn-ghost btn-lg">Ja tenho conta</a>
+      </div>
+      <div class="hero-features-inline">
+        <span>💬 Chat</span><span>📷 Imagens</span><span>📁 Arquivos</span><span>🎤 Voz</span><span>🔊 Audio</span>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="cerebro-demo">
+        <div class="demo-header">
+          <div class="demo-dots"><span></span><span></span><span></span></div>
+          <span>🧠 Cerebro IA</span>
+        </div>
+        <div class="demo-body">
+          <div class="demo-msg user">📷 [enviou uma imagem]<br>Esse produto venderia bem?</div>
+          <div class="demo-msg ia">Analisando a imagem... Com base no que vejo, o produto tem bom apelo visual. Recomendo destacar os beneficios na descricao e usar fotos com fundo branco para marketplace. Quer dicas de como precificar? 💡</div>
+          <div class="demo-msg user">🎤 [mensagem de voz]</div>
+          <div class="demo-msg ia typing">Cerebro IA esta digitando...</div>
+        </div>
+        <div class="demo-input-bar">
+          <span>💬</span><span class="demo-placeholder">Digite, envie imagem ou fale...</span>
+          <span>📷</span><span>📁</span><span>🎤</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="capacidades">
+    <h2>O que o Cerebro IA pode fazer</h2>
+    <div class="cap-grid">
+      <div class="cap-card">
+        <div class="cap-icon">💬</div>
+        <h3>Conversa inteligente</h3>
+        <p>Responde perguntas, explica assuntos, da ideias e mantem o contexto da conversa</p>
+      </div>
+      <div class="cap-card destaque">
+        <div class="cap-icon">📷</div>
+        <h3>Analise de imagens</h3>
+        <p>Recebe fotos, identifica objetos, descreve conteudo e responde perguntas sobre a imagem</p>
+      </div>
+      <div class="cap-card">
+        <div class="cap-icon">📁</div>
+        <h3>Analise de arquivos</h3>
+        <p>Le PDFs, documentos Word, planilhas e textos. Resume, explica e responde perguntas</p>
+      </div>
+      <div class="cap-card destaque">
+        <div class="cap-icon">🎤</div>
+        <h3>Entrada por voz</h3>
+        <p>Fale no microfone e o sistema converte para texto automaticamente</p>
+      </div>
+      <div class="cap-card">
+        <div class="cap-icon">🔊</div>
+        <h3>Respostas em voz</h3>
+        <p>A IA pode ler as respostas em voz alta para voce ouvir</p>
+      </div>
+      <div class="cap-card">
+        <div class="cap-icon">🧠</div>
+        <h3>Memoria contextual</h3>
+        <p>Lembra do assunto da conversa e mantem coerencia nas respostas</p>
+      </div>
+      <div class="cap-card">
+        <div class="cap-icon">📜</div>
+        <h3>Historico completo</h3>
+        <p>Todas as conversas ficam salvas. Busque, fixe, renomeie e retome quando quiser</p>
+      </div>
+      <div class="cap-card destaque">
+        <div class="cap-icon">🔒</div>
+        <h3>100% seguro</h3>
+        <p>Suas conversas sao privadas e protegidas. Ninguem mais acessa seus dados</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="habilidades">
+    <h2>Habilidades da IA</h2>
+    <div class="hab-grid">
+      <div class="hab-item"><span>🧠</span> Aprendizado e educacao</div>
+      <div class="hab-item"><span>💻</span> Tecnologia e programacao</div>
+      <div class="hab-item"><span>💰</span> Negocios e empreendedorismo</div>
+      <div class="hab-item"><span>📱</span> Redes sociais e marketing</div>
+      <div class="hab-item"><span>📄</span> Escrita de textos e redacao</div>
+      <div class="hab-item"><span>📊</span> Analise de dados e planilhas</div>
+      <div class="hab-item"><span>🎨</span> Criatividade e ideias</div>
+      <div class="hab-item"><span>📋</span> Planejamento e organizacao</div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>🧠 Cerebro IA — Inteligencia artificial avancada ao seu alcance.</p>
+  </footer>
+</div>
+{% endblock %}

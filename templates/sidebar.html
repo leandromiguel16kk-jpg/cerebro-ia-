@@ -1,0 +1,15 @@
+<aside class="sidebar">
+  <div class="sidebar-logo">🧠 Cerebro IA</div>
+  <nav class="sidebar-nav">
+    <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">🏠 Dashboard</a>
+    <a href="{{ url_for('chat') }}" class="nav-item {% if request.endpoint == 'chat' %}active{% endif %}">💬 Chat</a>
+    <a href="{{ url_for('projetos') }}" class="nav-item {% if request.endpoint == 'projetos' %}active{% endif %}">📂 Projetos</a>
+    <a href="{{ url_for('memoria') }}" class="nav-item {% if request.endpoint == 'memoria' %}active{% endif %}">🧠 Memoria</a>
+    <a href="{{ url_for('perfil') }}" class="nav-item {% if request.endpoint == 'perfil' %}active{% endif %}">👤 Perfil</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-av">{{ current_user.nome[0].upper() }}</div>
+    <div><div class="user-nome">{{ current_user.nome.split()[0] }}</div><div class="user-plano plano-{{ current_user.plano }}">{{ current_user.plano|capitalize }}</div></div>
+    <a href="{{ url_for('logout') }}" class="btn-logout" title="Sair">⬅️</a>
+  </div>
+</aside>

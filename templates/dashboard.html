@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block titulo %}Dashboard - Cerebro IA{% endblock %}
+{% block conteudo %}
+<div class="app-layout">
+  {% include 'sidebar.html' %}
+  <main class="main-content">
+    <div class="dash-header">
+      <div>
+        <h1>Ola, {{ current_user.nome.split()[0] }}! 👋</h1>
+        <p>Sua super IA esta pronta. Escolha um agente e comece!</p>
+      </div>
+      <a href="{{ url_for('chat') }}" class="btn-primary">+ Nova conversa</a>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">❓</div><div><div class="stat-num">{{ total_msgs }}</div><div class="stat-label">Perguntas feitas</div></div></div>
+      <div class="stat-card"><div class="stat-icon">💬</div><div><div class="stat-num">{{ total_convs }}</div><div class="stat-label">Conversas</div></div></div>
+      <div class="stat-card"><div class="stat-icon">📂</div><div><div class="stat-num">{{ total_proj }}</div><div class="stat-label">Projetos</div></div></div>
+      <div class="stat-card"><div class="stat-icon">🧠</div><div><div class="stat-num">{{ memorias }}</div><div class="stat-label">Memorias salvas</div></div></div>
+    </div>
+
+    <div class="agentes-grid">
+      {% for key, ag in AGENTES.items() %}
+      <a href="{{ url_for('chat') }}?agente={{ key }}" class="agente-card" style="--ag-cor:{{ ag.cor }}">
+        <div class="ag-icone">{{ ag.icone }}</div>
+        <div class="ag-nome">{{ ag.nome }}</div>
+        {% if stats_agente.get(key) %}
+        <div class="ag-stat">{{ stats_agente[key] }} conversa(s)</div>
+        {% endif %}
+        {% if current_user.agente_padrao == key %}
+        <div class="ag-padrao">Padrao</div>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+
+    {% if projetos %}
+    <div class="dash-section">
+      <div class="section-header"><h2>📂 Projetos ativos</h2><a href="{{ url_for('projetos') }}" class="ver-mais">Ver todos →</a></div>
+      <div class="proj-grid">
+        {% for p in projetos %}
+        <a href="{{ url_for('chat') }}?projeto={{ p.id }}" class="proj-card">
+          <div class="proj-header">
+            <span class="proj-agente">{{ AGENTES[p.agente].icone if p.agente in AGENTES else '🧠' }}</span>
+            <span class="proj-status status-{{ p.status|replace(' ','-') }}">{{ p.status }}</span>
+          </div>
+          <div class="proj-titulo">{{ p.titulo }}</div>
+          <div class="proj-desc">{{ p.descricao[:80] if p.descricao else 'Sem descricao' }}</div>
+          <div class="proj-meta">{{ p.total_conv }} conversa(s) • {{ p.data }}</div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if fixadas %}
+    <div class="dash-section">
+      <h2>📌 Fixadas</h2>
+      <div class="conv-lista">{% for c in fixadas %}
+        <a href="{{ url_for('chat', cid=c.id) }}" class="conv-item">
+          <span style="font-size:18px">{{ AGENTES[c.agente].icone if c.agente in AGENTES else '🧠' }}</span>
+          <div><div class="conv-titulo">{{ c.titulo }}</div><div class="conv-preview">{{ c.ultima_msg() }}</div></div>
+          <span class="conv-data">{{ c.criado_em.strftime('%d/%m') }}</span>
+        </a>{% endfor %}
+      </div>
+    </div>{% endif %}
+
+    {% if recentes %}
+    <div class="dash-section">
+      <div class="section-header"><h2>💬 Recentes</h2><a href="{{ url_for('chat') }}" class="ver-mais">Ver todas →</a></div>
+      <div class="conv-lista">{% for c in recentes %}
+        <a href="{{ url_for('chat', cid=c.id) }}" class="conv-item">
+          <span style="font-size:18px">{{ AGENTES[c.agente].icone if c.agente in AGENTES else '🧠' }}</span>
+          <div><div class="conv-titulo">{{ c.titulo }}</div><div class="conv-preview">{{ c.ultima_msg() }}</div></div>
+          <span class="conv-data">{{ c.criado_em.strftime('%d/%m') }}</span>
+        </a>{% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state"><div>🧠</div><h3>Sem conversas ainda</h3><p>Escolha um agente acima e comece!</p></div>
+    {% endif %}
+  </main>
+</div>
+{% endblock %}

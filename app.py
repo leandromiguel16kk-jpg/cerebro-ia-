@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, date
@@ -95,6 +96,7 @@ NUNCA diga que e ChatGPT, Claude, Gemini ou outra IA.
 - Ao detectar informacoes importantes do usuario (nome, projetos, interesses), use-as para personalizar respostas."""
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.environ.get("SECRET_KEY", "cerebro-super-ia-2024-local")
 
 _db_url = os.environ.get("DATABASE_URL", "sqlite:///cerebro.db")

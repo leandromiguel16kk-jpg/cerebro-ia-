@@ -774,11 +774,12 @@ def enviar():
     resposta_bruta = chamar_ia(historico, conv.agente, mem_txt, imagem_b64)
 
     # SISTEMA DE REVISÃO DUPLA (DUAS IAs)
-    # Ignoramos o revisor se houver comandos de geração de mídia ou se a resposta for curta
-    comandos_midia = ["[GERAR_IMAGEM:", "[GERAR_VIDEO:", "[EDITAR_IMAGEM:"]
+    # Ignoramos o revisor se houver comandos de geração de mídia, se a resposta for curta ou se for erro 429
+    comandos_midia = ["[GERAR_IMAGEM:", "[GERAR_VIDEO:", "[EDITAR_IMAGEM:", "[GERAR_DOCUMENTO:"]
     tem_comando = any(cmd in resposta_bruta for cmd in comandos_midia)
+    e_erro_429 = "Erro 429" in resposta_bruta or "servidor de inteligência está muito ocupado" in resposta_bruta
 
-    if len(resposta_bruta) > 150 and not tem_comando:
+    if len(resposta_bruta) > 150 and not tem_comando and not e_erro_429:
         resposta = chamar_revisor(resposta_bruta)
     else:
         resposta = resposta_bruta

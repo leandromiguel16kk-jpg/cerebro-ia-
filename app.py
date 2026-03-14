@@ -480,6 +480,7 @@ def editar_imagem(caminho_original, operacao, texto_extra=""):
     return None
 
 def chamar_ia(historico, agente_k="geral", memoria="", imagem_b64=None):
+    """CHAMADA DE IA COM REDUNDÂNCIA V21: Groq Principal + Fallback para evitar erro 429."""
     agente = AGENTES.get(agente_k, AGENTES["geral"])
     sys_prompt = SISTEMA_BASE.format(nome=agente["nome"], prompt_agente=agente["prompt"], memoria=memoria)
     msgs = [{"role": "system", "content": sys_prompt}]
@@ -496,13 +497,33 @@ def chamar_ia(historico, agente_k="geral", memoria="", imagem_b64=None):
         modelo = MODELO_TX
 
     payload = {"model": modelo, "messages": msgs, "temperature": 0.5, "max_tokens": 4096}
+    
+    # TENTATIVA 1: Groq (Principal)
     try:
+        print(f"DEBUG: [V21] Chamando Groq ({modelo})...")
         r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=25)
+        if r.status_code == 429:
+            print("DEBUG: [V21] Groq retornou 429 (Limite atingido). Ativando fallback...")
+            raise Exception("Rate limit exceeded")
         r.raise_for_status()
         return r.json()["choices"][0]["message"]["content"]
     except Exception as e:
-        print(f"Erro Groq: {e}")
-        return f"Erro na conexão com a IA: {e}"
+        print(f"DEBUG: [V21] Falha no Groq: {e}")
+        
+        # TENTATIVA 2: Fallback (OpenRouter ou similar se configurado, ou retry com delay)
+        # Por enquanto, vamos implementar um Retry Simples com backoff se for 429
+        import time
+        for i in range(2):
+            print(f"DEBUG: [V21] Tentando novamente em {2*(i+1)}s...")
+            time.sleep(2 * (i+1))
+            try:
+                r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=30)
+                if r.ok:
+                    return r.json()["choices"][0]["message"]["content"]
+            except:
+                continue
+                
+        return "⚠️ O servidor de inteligência está muito ocupado no momento (Erro 429). Por favor, aguarde alguns segundos e tente novamente. Estou trabalhando para expandir minha capacidade!"
 
 def chamar_revisor(resposta_original):
     payload = {

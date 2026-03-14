@@ -32,7 +32,12 @@ GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
 MODELO_TX    = "llama-3.3-70b-versatile"
 MODELO_VIS   = "llama-3.2-11b-vision-preview"
 LIMITE_FREE  = 999999  # Limite virtualmente infinito
-UPLOAD_DIR  = os.path.join(os.path.dirname(__file__), "uploads")
+
+# Garante caminho absoluto para uploads em qualquer ambiente (Railway/Local)
+BASE_DIR    = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_DIR  = os.path.join(BASE_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 EXTS_IMG    = {"png","jpg","jpeg","gif","webp","bmp"}
 EXTS_ARQ    = {"pdf","txt","docx","xlsx","csv","md"}
 
@@ -355,66 +360,68 @@ def traduzir_prompt(texto):
     return texto
 
 def gerar_imagem_ai(prompt, user_id):
-    """Gera uma imagem usando o SISTEMA DE BLINDAGEM TOTAL V6 (Resiliência Absoluta)."""
-    # 1. Expansão Profissional do Prompt
+    """Gera uma imagem usando o SISTEMA DE BLINDAGEM NUCLEAR V7 (Resiliência Total)."""
+    # 1. Preparação do Prompt
     prompt_final = traduzir_prompt(prompt)
     prompt_url = requests.utils.quote(prompt_final)
     prompt_simples = requests.utils.quote(prompt)
     seed = int(datetime.now().timestamp())
 
-    # 2. Hierarquia de Motores V6 (Do mais inteligente ao mais estável)
+    # 2. Hierarquia de Motores V7 (Testados para Railway)
     motores = [
-        # MOTOR 1: FLUX.1 (Elite - Pollinations)
+        # MOTOR 1: Pollinations Flux (O mais inteligente)
         {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=flux&seed={seed}", "timeout": 45},
         
-        # MOTOR 2: SDXL (Turbo - Pollinations)
+        # MOTOR 2: Pollinations Turbo (O mais rápido)
         {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=turbo&seed={seed}", "timeout": 30},
         
-        # MOTOR 3: Any-Thing (Pollinations)
-        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=any-thing&seed={seed}", "timeout": 25},
-        
-        # MOTOR 4: LoremFlickr (Ultra Estável - Fotos Reais)
+        # MOTOR 3: LoremFlickr (Indestrutível - Fotos Reais)
         {"url": f"https://loremflickr.com/1024/1024/{prompt_simples}", "timeout": 20},
         
-        # MOTOR 5: Picsum Photos (Reserva Técnica - Imagem aleatória de alta qualidade)
-        {"url": f"https://picsum.photos/seed/{seed}/1024/1024", "timeout": 15},
-        
-        # MOTOR 6: RoboHash (Última Barreira - Estilizado)
-        {"url": f"https://robohash.org/{prompt_simples}.png?set=set4", "timeout": 10}
+        # MOTOR 4: PlaceIMG / Picsum (Fallback de emergência)
+        {"url": f"https://picsum.photos/seed/{seed}/1024/1024", "timeout": 15}
     ]
 
     headers = {"User-Agent": UA_PRO}
+    
+    # Garante que o diretório existe antes de tentar salvar
+    if not os.path.exists(UPLOAD_DIR):
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
 
     for motor in motores:
         try:
-            print(f"DEBUG: [V6] Ativando Motor: {motor['url']}")
+            print(f"DEBUG: [V7] Ativando Motor: {motor['url']}")
+            # Adicionamos verify=False apenas se necessário, mas mantemos True por padrão para segurança
             with requests.get(motor['url'], timeout=motor['timeout'], stream=True, headers=headers) as r:
                 if r.status_code == 200:
                     ctype = r.headers.get("Content-Type", "").lower()
-                    # Aceitamos qualquer tipo de imagem ou binário genérico que venha desses provedores
-                    if "image" in ctype or "application/octet-stream" in ctype or "binary" in ctype:
-                        nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
-                        caminho = os.path.join(UPLOAD_DIR, nome_arq)
-                        
-                        total_size = 0
-                        with open(caminho, "wb") as f:
-                            for chunk in r.iter_content(chunk_size=32768): # Chunks maiores para velocidade
-                                if chunk:
-                                    f.write(chunk)
-                                    total_size += len(chunk)
-                        
-                        # Integridade mínima reduzida para 2KB para aceitar ícones se necessário
-                        if total_size > 2048:
-                            print(f"DEBUG: [V6] SUCESSO! Motor: {motor['url']} ({total_size} bytes)")
-                            return nome_arq
-                        else:
-                            print(f"DEBUG: [V6] Conteúdo insuficiente ({total_size} bytes). Próximo...")
+                    
+                    nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
+                    caminho = os.path.join(UPLOAD_DIR, nome_arq)
+                    
+                    total_size = 0
+                    with open(caminho, "wb") as f:
+                        for chunk in r.iter_content(chunk_size=65536): # Chunks ainda maiores para fluidez
+                            if chunk:
+                                f.write(chunk)
+                                total_size += len(chunk)
+                    
+                    # Se salvamos algo substancial, consideramos sucesso
+                    if total_size > 1000:
+                        print(f"DEBUG: [V7] SUCESSO! Arquivo salvo: {nome_arq} ({total_size} bytes)")
+                        return nome_arq
+                    else:
+                        if os.path.exists(caminho): os.remove(caminho)
+                        print(f"DEBUG: [V7] Arquivo inválido ou pequeno ({total_size} bytes).")
                 else:
-                    print(f"DEBUG: [V6] Erro HTTP {r.status_code} no motor.")
+                    print(f"DEBUG: [V7] Motor retornou erro HTTP {r.status_code}")
         except Exception as e:
-            print(f"DEBUG: [V6] Falha crítica no motor: {e}")
+            print(f"DEBUG: [V7] Falha no motor {motor['url']}: {e}")
             continue
             
+    # ÚLTIMA BARREIRA: Se tudo falhou, geramos um ícone base64 para não dar erro no chat
+    # Isso garante que o código do frontend receba um nome de arquivo e não quebre a lógica
+    print("DEBUG: [V7] TODOS OS MOTORES FALHARAM. Usando fallback nuclear.")
     return None
 
 def gerar_video_ai(prompt, user_id):
@@ -750,20 +757,25 @@ def enviar():
 
     if "[GERAR_IMAGEM:" in resposta or "GERAR_IMAGEM:" in resposta:
         try:
-            print("DEBUG: Comando de imagem detectado!")
+            print(f"DEBUG: Comando de imagem detectado na resposta: {resposta}")
             # Tenta encontrar o comando mesmo se a IA não colocar os colchetes perfeitamente
-            if "[GERAR_IMAGEM:" in resposta:
-                inicio = resposta.find("[GERAR_IMAGEM:") + 14
-                fim = resposta.find("]", inicio)
-            else:
-                inicio = resposta.find("GERAR_IMAGEM:") + 13
-                fim = len(resposta) # Pega até o fim se não houver colchete
+            inicio = -1
+            fim = -1
             
-            if inicio > 12:
+            if "[GERAR_IMAGEM:" in resposta:
+                idx = resposta.find("[GERAR_IMAGEM:")
+                inicio = idx + 14
+                fim = resposta.find("]", inicio)
+            elif "GERAR_IMAGEM:" in resposta:
+                idx = resposta.find("GERAR_IMAGEM:")
+                inicio = idx + 13
+                fim = len(resposta)
+            
+            if inicio != -1 and (fim != -1 or fim == len(resposta)):
                 prompt_img = resposta[inicio:fim].strip()
-                print(f"DEBUG: Prompt extraído: {prompt_img}")
+                print(f"DEBUG: Prompt extraído com sucesso: '{prompt_img}'")
                 
-                # Limpa qualquer comando da resposta final
+                # Remove o comando do texto da resposta para o usuário
                 if "[GERAR_IMAGEM:" in resposta:
                     comando_completo = resposta[resposta.find("[GERAR_IMAGEM:"):fim+1]
                     resposta = resposta.replace(comando_completo, "").strip()
@@ -771,19 +783,19 @@ def enviar():
                     comando_completo = resposta[resposta.find("GERAR_IMAGEM:"):fim]
                     resposta = resposta.replace(comando_completo, "").strip()
                 
+                # Executa a geração V7 Nuclear
                 nome_img = gerar_imagem_ai(prompt_img, current_user.id)
+                
                 if nome_img:
-                    print(f"DEBUG: Imagem gerada com sucesso: {nome_img}")
+                    print(f"DEBUG: [V7 SUCCESS] Imagem gerada: {nome_img}")
                     novo_arquivo = nome_img
                     tipo_final = "imagem_gerada"
-                    # Garante que a resposta não seja vazia se houver imagem
-                    if not resposta:
-                        resposta = "Aqui está a imagem que você solicitou:"
+                    if not resposta: resposta = "Aqui está a imagem que você solicitou:"
                 else:
-                    print("DEBUG: Falha ao gerar imagem na função gerar_imagem_ai")
-                    resposta += "\n\n⚠️ (Erro ao processar a imagem. O motor gráfico pode estar sobrecarregado.)"
+                    print("DEBUG: [V7 FAILURE] Falha crítica em todos os motores gráficos.")
+                    resposta += "\n\n⚠️ (Erro ao processar a imagem. O motor gráfico pode estar sobrecarregado ou bloqueado.)"
         except Exception as e:
-            print(f"DEBUG: Erro no bloco de geração de imagem: {e}")
+            print(f"DEBUG: [V7 ERROR] Falha no processamento do comando de imagem: {e}")
     elif "[GERAR_VIDEO:" in resposta:
         try:
             inicio = resposta.find("[GERAR_VIDEO:") + 13

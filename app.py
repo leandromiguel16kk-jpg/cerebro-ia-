@@ -668,7 +668,11 @@ def enviar():
     resposta_bruta = chamar_ia(historico, conv.agente, mem_txt, imagem_b64)
 
     # SISTEMA DE REVISÃO DUPLA (DUAS IAs)
-    if len(resposta_bruta) > 150:
+    # Ignoramos o revisor se houver comandos de geração de mídia ou se a resposta for curta
+    comandos_midia = ["[GERAR_IMAGEM:", "[GERAR_VIDEO:", "[EDITAR_IMAGEM:"]
+    tem_comando = any(cmd in resposta_bruta for cmd in comandos_midia)
+
+    if len(resposta_bruta) > 150 and not tem_comando:
         resposta = chamar_revisor(resposta_bruta)
     else:
         resposta = resposta_bruta

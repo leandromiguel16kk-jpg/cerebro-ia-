@@ -171,12 +171,30 @@ function adicionarMsg(texto, tipo, subtipo = 'texto', arquivoNome = null, comBtn
   let prefixo = '';
   if (subtipo === 'imagem') prefixo = '📷 ';
   else if (subtipo === 'arquivo') prefixo = '📁 ';
+  
+  const textoLimpoParaCopia = texto.replace(/<br>/g, '\n').replace(/<[^>]+>/g, '');
   const btnFalar = (comBtnFalar && tipo === 'ia') ?
-    `<button class="btn-falar" onclick="falarTexto(this)" data-texto="${texto.replace(/"/g,'&quot;')}" title="Ouvir">🔊</button>` : '';
-  div.innerHTML = av + `<div class="msg-balao">${prefixo}${texto.replace(/\n/g, '<br>')}${btnFalar}</div>` + uav;
+    `<div class="msg-acoes">
+       <button class="btn-copiar" onclick="copiarTexto(this)" data-texto="${textoLimpoParaCopia.replace(/"/g,'&quot;')}" title="Copiar texto">📋</button>
+       <button class="btn-falar" onclick="falarTexto(this)" data-texto="${textoLimpoParaCopia.replace(/"/g,'&quot;')}" title="Ouvir">🔊</button>
+     </div>` : '';
+
+  div.innerHTML = av + `<div class="msg-balao"><div class="msg-conteudo">${prefixo}${texto.replace(/\n/g, '<br>')}</div>${btnFalar}</div>` + uav;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
   return div;
+}
+
+function copiarTexto(btn) {
+  const texto = btn.getAttribute('data-texto');
+  navigator.clipboard.writeText(texto).then(() => {
+    btn.innerHTML = '✅';
+    btn.title = 'Copiado!';
+    setTimeout(() => {
+      btn.innerHTML = '📋';
+      btn.title = 'Copiar texto';
+    }, 2000);
+  });
 }
 
 function adicionarTyping() {

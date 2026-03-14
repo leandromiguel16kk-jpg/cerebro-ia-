@@ -76,9 +76,9 @@ AGENTES = {
     },
 }
 
-SISTEMA_BASE = """[START SYSTEM PROMPT: PROJECT NEXUS ELITE V3 ARCHITECT]
+SISTEMA_BASE = """[START SYSTEM PROMPT: PROJECT NEXUS ELITE V4 ARCHITECT]
 
-Você é uma inteligência artificial avançada (Cerebro IA) com o protocolo Nexus Elite V3. Sua missão é fornecer respostas de qualidade máxima, baseadas em fatos e organizadas com precisão cirúrgica.
+Você é uma inteligência artificial avançada (Cerebro IA) com o protocolo Nexus Elite V4. Sua missão é fornecer respostas de qualidade máxima, baseadas em fatos e organizadas com precisão cirúrgica.
 
 {prompt_agente}
 
@@ -86,11 +86,11 @@ Você é uma inteligência artificial avançada (Cerebro IA) com o protocolo Nex
 Antes de cada resposta, identifique a categoria: [História, Política, Ciência, Tecnologia, Programação, Educação ou Geral].
 - FOCO TOTAL: Responda apenas o que foi solicitado. 
 - RESTRIÇÃO DE CONTEÚDO: Se o tema for História/Política/Ciência, PROIBIDO incluir códigos de programação ou termos técnicos de TI. 
-- ESTILO ADAPTATIVO: Use narrativa para História, lógica estruturada para Ciência e código otimizado apenas para Programação/Tecnologia.
 
-== 2. LEIS DE PRECISÃO E VERIFICAÇÃO ==
-- VERIFICAÇÃO DE FATOS: Analise datas, nomes e cargos. NUNCA invente informações. Use formulações seguras ("segundo registros históricos") em caso de fontes divergentes.
-- AUTOAVALIAÇÃO: Revise internamente para detectar erros cronológicos, frases confusas ou repetições antes de exibir a resposta.
+== 2. SISTEMAS DE VERIFICAÇÃO ELITE (INTERNOS) ==
+1️⃣ SISTEMA DE VERIFICAÇÃO CRONOLÓGICA: Certifique-se de que todos os eventos seguem uma linha do tempo lógica e histórica correta.
+2️⃣ SISTEMA DE CHECAGEM DE IDADE VS EVENTO: Verifique se as datas de nascimento/morte e idades das pessoas citadas são compatíveis com os eventos históricos mencionados.
+3️⃣ SISTEMA DE REVISÃO DE FATOS: Verifique mentalmente datas, nomes e cargos. NUNCA invente informações. 
 
 == 3. ESTRUTURA PROFISSIONAL (PADRÃO NEXUS) ==
 Use esta estrutura para temas informativos:
@@ -116,15 +116,24 @@ Análise do impacto social, político, econômico ou científico do tema.
 ### Conclusão
 Sintetiza a importância histórica ou técnica e o legado.
 
-== 4. PROTOCOLOS DE ENGENHARIA E DESIGN (PARA TECH/GAMES) ==
-- Unity/C#: Foco em performance mobile e arquitetura limpa (Ryzen 5000G).
-- Game Design: Balanceamento TTK, mapas FPS e monetização estratégica.
-- Saída Estruturada: [Análise Rápida] -> [Execução] -> [Dica de Otimização] -> [Próximo Passo].
-
 == PROTOCOLOS FINAIS ==
 - Idioma: Português Brasileiro (PT-BR).
 - Geração de arquivos: Confirme, mostre o conteúdo no chat e forneça o link de download.
 - Finalização: Sempre termine com uma pergunta provocativa que aprofunde o tema atual."""
+
+SISTEMA_REVISOR = """[START REVISOR SYSTEM: NEXUS ELITE DOUBLE-CHECK]
+
+Você é a segunda inteligência artificial do sistema Cerebro IA. Sua única função é ANALISAR e CORRIGIR a resposta gerada pela primeira IA.
+
+Sua tarefa é garantir 100% de precisão usando estes sistemas:
+1️⃣ VERIFICAÇÃO CRONOLÓGICA: A linha do tempo está correta? Existem saltos temporais impossíveis?
+2️⃣ IDADE VS EVENTO: A pessoa mencionada tinha idade para participar desse evento? Ela já tinha nascido ou ainda estava viva?
+3️⃣ REVISÃO DE FATOS: Alguma data, nome, cargo ou estatística está incorreta?
+
+INSTRUÇÕES:
+- Se a resposta estiver 100% correta, retorne-a exatamente como está.
+- Se houver erros, REESCREVA a resposta corrigindo-os, mantendo o estilo original.
+- Não adicione comentários como "Eu corrigi isso...", apenas entregue a resposta final impecável."""
 
 app = Flask(__name__)
 CORS(app)
@@ -321,42 +330,48 @@ def img_b64(caminho):
     with open(caminho, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
-def chamar_ia(historico, agente_key="geral", user_mem="", imagem_b64=None):
-    if not GROQ_API_KEY:
-        return "Chave da API nao configurada. Adicione GROQ_API_KEY no arquivo .env ou nas variaveis de ambiente."
-    ag = AGENTES.get(agente_key, AGENTES["geral"])
-    sys_prompt = SISTEMA_BASE.format(
-        nome=NOME_IA,
-        prompt_agente=ag["prompt"],
-        memoria=user_mem or "Nenhuma informacao salva ainda."
-    )
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json"
-    }
+def chamar_ia(historico, agente_k="geral", memoria="", imagem_b64=None):
+    agente = AGENTES.get(agente_k, AGENTES["geral"])
+    sys_prompt = SISTEMA_BASE.format(nome=agente["nome"], prompt_agente=agente["prompt"], memoria=memoria)
+    msgs = [{"role": "system", "content": sys_prompt}]
+    for h in historico[-12:]:
+        msgs.append({"role": h["role"], "content": h["content"]})
+    
     if imagem_b64:
+        msgs[-1]["content"] = [
+            {"type": "text", "text": msgs[-1]["content"]},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{imagem_b64}"}}
+        ]
         modelo = MODELO_VIS
-        msgs = [{"role": "system", "content": sys_prompt}] + historico[:-1]
-        msgs.append({
-            "role": "user",
-            "content": [
-                {"type": "text", "text": historico[-1]["content"]},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{imagem_b64}"}}
-            ]
-        })
     else:
         modelo = MODELO_TX
-        msgs = [{"role": "system", "content": sys_prompt}] + historico
+
+    payload = {"model": modelo, "messages": msgs, "temperature": 0.5, "max_tokens": 4096}
     try:
-        r = requests.post(GROQ_URL, headers=headers,
-                          json={"model": modelo, "messages": msgs,
-                                "temperature": 0.8, "max_tokens": 2048},
-                          timeout=60)
-        if r.ok:
-            return r.json()["choices"][0]["message"]["content"]
-        return f"Erro da API: {r.status_code} - {r.text[:200]}"
+        r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=25)
+        r.raise_for_status()
+        return r.json()["choices"][0]["message"]["content"]
     except Exception as e:
-        return f"Erro ao conectar com a IA: {e}"
+        print(f"Erro Groq: {e}")
+        return f"Erro na conexão com a IA: {e}"
+
+def chamar_revisor(resposta_original):
+    payload = {
+        "model": MODELO_TX,
+        "messages": [
+            {"role": "system", "content": SISTEMA_REVISOR},
+            {"role": "user", "content": f"Analise e corrija se necessário esta resposta:\n\n{resposta_original}"}
+        ],
+        "temperature": 0.3,
+        "max_tokens": 4096
+    }
+    try:
+        r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=25)
+        r.raise_for_status()
+        return r.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"Erro Revisor: {e}")
+        return resposta_original
 
 def extrair_memoria(texto_usuario, user_id):
     """Extrai informações importantes do texto e salva na memória de forma inteligente."""
@@ -585,7 +600,15 @@ def enviar():
     historico.append({"role": "user", "content": texto + ctx_arq + ctx_web})
 
     mem_txt = current_user.get_memoria_texto()
-    resposta = chamar_ia(historico, conv.agente, mem_txt, imagem_b64)
+    resposta_bruta = chamar_ia(historico, conv.agente, mem_txt, imagem_b64)
+
+    # SISTEMA DE REVISÃO DUPLA (DUAS IAs)
+    # A segunda IA analisa e corrige erros de cronologia, idade e fatos.
+    # Só ativamos para respostas informativas (mais de 150 caracteres) para poupar latência.
+    if len(resposta_bruta) > 150:
+        resposta = chamar_revisor(resposta_bruta)
+    else:
+        resposta = resposta_bruta
 
     # Verificação de solicitação de criação de arquivo (mais flexível)
     novo_arquivo = None

@@ -333,57 +333,61 @@ def img_b64(caminho):
     with open(caminho, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
+def traduzir_prompt(texto):
+    """Traduz o prompt para inglês usando a própria Groq para máxima fidelidade."""
+    try:
+        payload = {
+            "model": "llama-3.1-8b-instant",
+            "messages": [
+                {"role": "system", "content": "Translate the following image prompt to English. Return ONLY the translated text, no explanation."},
+                {"role": "user", "content": texto}
+            ],
+            "temperature": 0.3
+        }
+        r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=10)
+        if r.ok:
+            return r.json()["choices"][0]["message"]["content"].strip()
+    except: pass
+    return texto # Fallback para o original se falhar
+
 def gerar_imagem_ai(prompt, user_id):
-    """Gera uma imagem usando MULTIPLOS MOTORES GRÁFICOS para evitar sobrecarga."""
-    # Lista expandida de motores para redundância total
-    # 1. Pollinations (Vários Modelos)
-    # 2. Unsplash (Fotos Reais)
-    # 3. LoremFlickr (Imagens Diversas)
-    # 4. PlaceImg / Picsum (Fallbacks rápidos)
+    """Gera uma imagem de ALTA FIDELIDADE com tradução automática e motores de IA reais."""
+    # 1. Traduz o prompt se estiver em português
+    prompt_en_raw = traduzir_prompt(prompt)
     
-    prompt_limpo = prompt.replace("[", "").replace("]", "").strip()
-    prompt_en = requests.utils.quote(prompt_limpo)
+    # 2. Refina o prompt para os motores de IA (Qualidade Masterpiece)
+    prompt_premium = f"Masterpiece, high quality, highly detailed, professional lighting, {prompt_en_raw}"
+    prompt_url = requests.utils.quote(prompt_premium)
     seed = int(datetime.now().timestamp())
 
+    # 3. Lista de motores de IA REAIS (Removidos motores genéricos como Unsplash/Robohash)
     motores = [
-        # Motor 1: Pollinations Turbo (Mais rápido)
-        {"url": f"https://image.pollinations.ai/prompt/{prompt_en}?width=1024&height=1024&nologo=true&model=turbo&seed={seed}", "timeout": 15},
+        # Motor 1: Pollinations Flux (O melhor para seguir prompts complexos)
+        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=flux&seed={seed}", "timeout": 30},
         
-        # Motor 2: Pollinations Flux (Alta Qualidade)
-        {"url": f"https://image.pollinations.ai/prompt/{prompt_en}?width=1024&height=1024&nologo=true&model=flux&seed={seed}", "timeout": 25},
+        # Motor 2: Pollinations Turbo (Rápido e preciso)
+        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=turbo&seed={seed}", "timeout": 20},
         
-        # Motor 3: Pollinations Any-Thing (Estilizado)
-        {"url": f"https://image.pollinations.ai/prompt/{prompt_en}?width=1024&height=1024&nologo=true&model=any-thing&seed={seed}", "timeout": 20},
-        
-        # Motor 4: Unsplash Source (Fotos reais baseadas em keywords)
-        {"url": f"https://source.unsplash.com/1024x1024/?{prompt_en}", "timeout": 10},
-        
-        # Motor 5: LoremFlickr (Fallback de keywords)
-        {"url": f"https://loremflickr.com/1024/1024/{prompt_en}", "timeout": 10},
-        
-        # Motor 6: RoboHash (Fallback artístico/robótico)
-        {"url": f"https://robohash.org/{prompt_en}.png?set=set4", "timeout": 5}
+        # Motor 3: Pollinations Any-Thing (Excelente para anime/ilustração)
+        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=any-thing&seed={seed}", "timeout": 20}
     ]
 
     for motor in motores:
         try:
-            print(f"DEBUG: Tentando motor: {motor['url']}")
+            print(f"DEBUG: Tentando motor de alta fidelidade: {motor['url']}")
             r = requests.get(motor['url'], timeout=motor['timeout'])
             ctype = r.headers.get("Content-Type", "").lower()
             
-            # Se retornar imagem e tiver um tamanho razoável (evita ícones de erro de 1kb)
-            if r.ok and "image" in ctype and len(r.content) > 2000:
+            if r.ok and "image" in ctype and len(r.content) > 5000: # Exige um arquivo maior para garantir qualidade
                 nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
                 caminho = os.path.join(UPLOAD_DIR, nome_arq)
                 with open(caminho, "wb") as f:
                     f.write(r.content)
                 
-                print(f"DEBUG: Sucesso total no motor: {motor['url']}")
+                print(f"DEBUG: Sucesso total na geração fiel: {motor['url']}")
                 return nome_arq
-            else:
-                print(f"DEBUG: Motor {motor['url']} falhou ou retornou lixo. Pulando...")
         except Exception as e:
-            print(f"DEBUG: Erro ao conectar no motor {motor['url']}: {e}")
+            print(f"DEBUG: Falha no motor de IA: {e}")
             continue
             
     return None

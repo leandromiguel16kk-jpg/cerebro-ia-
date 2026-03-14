@@ -400,17 +400,46 @@ function toggleTTS() {
 
 function falarTexto(btn) {
   const texto = btn.getAttribute('data-texto');
-  falarTextoStr(texto);
+  
+  if (window.speechSynthesis.speaking && btn.classList.contains('falando')) {
+    window.speechSynthesis.cancel();
+    removerEstadoFalando();
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+  removerEstadoFalando();
+  
+  btn.classList.add('falando');
+  btn.innerHTML = '🛑';
+  btn.title = 'Parar de ouvir';
+  
+  falarTextoStr(texto, () => {
+    btn.classList.remove('falando');
+    btn.innerHTML = '🔊';
+    btn.title = 'Ouvir resposta';
+  });
 }
 
-function falarTextoStr(texto) {
+function removerEstadoFalando() {
+  document.querySelectorAll('.btn-falar.falando').forEach(b => {
+    b.classList.remove('falando');
+    b.innerHTML = '🔊';
+    b.title = 'Ouvir resposta';
+  });
+}
+
+function falarTextoStr(texto, callback = null) {
   if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
   const texto_limpo = texto.replace(/[#*`_\[\]()]/g, ' ').substring(0, 2000);
   const utterance = new SpeechSynthesisUtterance(texto_limpo);
   utterance.lang = 'pt-BR';
-  utterance.rate = 1.0;
+  utterance.rate = 1.1;
   utterance.pitch = 1.0;
+  
+  utterance.onend = () => { if (callback) callback(); };
+  utterance.onerror = () => { if (callback) callback(); };
+
   const vozes = window.speechSynthesis.getVoices();
   const vozPT = vozes.find(v => v.lang.startsWith('pt'));
   if (vozPT) utterance.voice = vozPT;

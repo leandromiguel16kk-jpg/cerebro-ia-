@@ -317,8 +317,10 @@ input,textarea,select{font-family:inherit}
     background: #1a8e5f;
     transform: scale(1.05);
 }
-.btn-falar{background:transparent;border:none;font-size:14px;cursor:pointer;margin-left:8px;opacity:.6;transition:.15s;vertical-align:middle}
-.btn-falar:hover{opacity:1}
+.btn-falar{background:transparent;border:none;font-size:14px;cursor:pointer;margin-left:8px;opacity:.6;transition:.15s;vertical-align:middle;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%}
+.btn-falar:hover{opacity:1;background:var(--bg3)}
+.btn-falar.falando{opacity:1;color:var(--red);animation:pulse-audio 1.5s infinite;background:rgba(239,68,68,0.1)}
+@keyframes pulse-audio{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
 .typing-dots{display:flex;gap:4px;padding:12px 16px;align-items:center}
 .typing-dots span{width:8px;height:8px;border-radius:50%;background:var(--text2);animation:typing 1.2s infinite}
 .typing-dots span:nth-child(2){animation-delay:.2s}

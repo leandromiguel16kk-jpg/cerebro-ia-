@@ -40,15 +40,86 @@
     box-shadow: 0 10px 20px rgba(0,0,0,0.3);
 }
 
-/* Scrollbar Moderno */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { 
-    background: var(--border); 
-    border-radius: 20px;
-    border: 2px solid var(--bg);
+/* Estilos da Toolbar de Agentes Jarvis Style */
+.agentes-toolbar {
+    padding: 0 15px;
+    margin-bottom: 20px;
 }
-::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+.section-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+}
+.agentes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+.agente-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.agente-item:hover {
+    border-color: var(--accent);
+    background: rgba(59, 130, 246, 0.1);
+    transform: translateY(-2px);
+}
+.agente-item.ativo {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+}
+.ag-icon {
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+}
+.ag-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+/* Avatar Dinâmico */
+.msg-av.ia-avatar {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+    animation: pulse-avatar 2s infinite;
+}
+@keyframes pulse-avatar {
+    0% { box-shadow: 0 0 5px var(--accent); }
+    50% { box-shadow: 0 0 15px var(--accent); }
+    100% { box-shadow: 0 0 5px var(--accent); }
+}
+
+/* Botão Compartilhar */
+.btn-compartilhar {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 5px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+.btn-compartilhar:hover {
+    background: rgba(255,255,255,0.1);
+}
 [data-tema="light"] { --bg:#f0f2f7; --bg2:#fff; --bg3:#e8ecf4; --border:#d1d9e8; --text:#1a2035; --text2:#5a6478; --shadow:0 4px 24px rgba(0,0,0,.1); }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}

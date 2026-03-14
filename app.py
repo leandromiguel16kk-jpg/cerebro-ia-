@@ -365,8 +365,26 @@ def traduzir_prompt(texto):
         print(f"DEBUG: Erro Photorealism Prompter: {e}")
     return texto
 
+def buscar_web(query):
+    """SISTEMA DE PESQUISA WEB V20: Bypass de API usando motor DuckDuckGo Lite."""
+    try:
+        headers = {"User-Agent": UA_PRO}
+        url = f"https://duckduckgo.com/html/?q={requests.utils.quote(query)}"
+        r = requests.get(url, headers=headers, timeout=15)
+        if r.ok:
+            # Extração simples via regex para evitar dependência de BS4
+            links = re.findall(r'class="result__snippet".*?>(.*?)</a>', r.text, re.S)
+            if not links:
+                links = re.findall(r'class="result__snippet">(.*?)</div>', r.text, re.S)
+            
+            res_texto = "\n".join([re.sub('<[^>]+>', '', l).strip() for l in links[:5]])
+            return res_texto if res_texto else "Nenhum resultado direto encontrado."
+    except Exception as e:
+        print(f"DEBUG: Erro Busca Web: {e}")
+    return "Pesquisa web temporariamente indisponível."
+
 def gerar_imagem_ai(prompt, user_id):
-    """SISTEMA DE DESBLOQUEIO TOTAL V19 (MOTOR TRIPLO): Bypass supremo com motores redundantes de elite."""
+    """SISTEMA DE DESBLOQUEIO TOTAL V20 (MOTOR QUADRUPLO): Bypass supremo com motor de reserva internacional."""
     try:
         # 1. Preparação do Prompt
         prompt_final = prompt
@@ -377,48 +395,46 @@ def gerar_imagem_ai(prompt, user_id):
         prompt_url = requests.utils.quote(prompt_final)
         seed = int(datetime.now().timestamp())
 
-        # 2. MOTORES DE ELITE (V19 - Redundância Total)
+        # 2. MOTORES DE ELITE (V20 - Redundância Máxima)
         motores = [
-            # MOTOR 1: FLUX (Alta Fidelidade)
+            # MOTOR 1: FLUX (Fidelidade Master)
             {"nome": "Flux-Master", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=flux&nologo=true&nofeed=true"},
             
-            # MOTOR 2: TURBO (Velocidade Extrema)
+            # MOTOR 2: PRODIA (Novo Backup Ultra-Estável)
+            {"nome": "Prodia-V2", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=search&nologo=true"},
+            
+            # MOTOR 3: TURBO (Velocidade)
             {"nome": "Turbo-Speed", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=turbo&nologo=true"},
             
-            # MOTOR 3: STABLE DIFFUSION (Fallback Estável)
+            # MOTOR 4: STABLE DIFFUSION (Fallback)
             {"nome": "SD-Legacy", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=stable-diffusion-xl&nologo=true"}
         ]
 
-        # Headers de Navegador Real (V19) - Mais robustos
+        # Headers de Navegador Real (V20)
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
             "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Cache-Control": "no-cache",
             "Referer": "https://pollinations.ai/"
         }
 
         for motor in motores:
             try:
-                print(f"DEBUG: [V19] Acionando {motor['nome']}...")
-                # Timeout de 60s e desativação de verificação SSL para evitar bloqueios de CDN
+                print(f"DEBUG: [V20] Acionando {motor['nome']}...")
                 r = requests.get(motor['url'], timeout=60, headers=headers, verify=False)
                 
-                if r.status_code == 200 and len(r.content) > 15000:
+                if r.status_code == 200 and len(r.content) > 10000:
                     nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
                     caminho = os.path.join(UPLOAD_DIR, nome_arq)
                     with open(caminho, "wb") as f:
                         f.write(r.content)
-                    print(f"DEBUG: [V19 SUCCESS] {motor['nome']} entregou a imagem ({len(r.content)} bytes).")
+                    print(f"DEBUG: [V20 SUCCESS] {motor['nome']} entregou a imagem.")
                     return nome_arq
-                else:
-                    print(f"DEBUG: [V19] {motor['nome']} retornou erro ou imagem pequena (Status: {r.status_code})")
             except Exception as e:
-                print(f"DEBUG: [V19] Falha no motor {motor['nome']}: {e}")
+                print(f"DEBUG: [V20] Falha {motor['nome']}: {e}")
                 continue
                 
     except Exception as e:
-        print(f"DEBUG: [V19 CRITICAL] Erro catastrófico: {e}")
+        print(f"DEBUG: [V20 CRITICAL] Erro: {e}")
     return None
 
 def gerar_video_ai(prompt, user_id):
@@ -703,11 +719,11 @@ def enviar():
     if not texto and not arquivo:
         return jsonify({"erro": "Mensagem vazia"}), 400
 
-    # busca web
+    # busca web real
     ctx_web = ""
-    # if buscar and texto:
-    #    resultados = buscar_web(texto)
-    #    ctx_web = f"\n\n[Resultados da busca na internet para: '{texto}']\n{resultados}\n\nUse esses resultados para responder com informacoes atualizadas."
+    if buscar and texto:
+        resultados = buscar_web(texto)
+        ctx_web = f"\n\n[Resultados da busca em tempo real para: '{texto}']\n{resultados}\n\nUse essas informações atualizadas para responder com precisão."
 
     # salvar/criar conversa
     if cid:

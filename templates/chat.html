@@ -5,6 +5,22 @@
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
   <aside class="sidebar sidebar-chat" id="sidebar">
     <div class="sidebar-logo" onclick="novaConversa()" style="cursor:pointer">🧠 Cerebro IA</div>
+    
+    <!-- Barra de Modos (Agentes) Jarvis Style -->
+    <div class="agentes-toolbar" style="padding: 0 15px; margin-bottom: 15px;">
+      <p class="section-title" style="font-size: 10px; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 8px;">MODOS DE IA</p>
+      <div class="agentes-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+        {% for id, ag in AGENTES.items() %}
+        <div class="agente-item {% if agente_atual == id %}ativo{% endif %}" 
+             onclick="mudarAgente('{{ id }}')" title="{{ ag.nome }}" 
+             style="display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 5px; border-radius: 8px; background: rgba(255,255,255,0.05);">
+          <span class="ag-icon" style="font-size: 1.2rem;">{{ ag.icone }}</span>
+          <span class="ag-label" style="font-size: 9px; margin-top: 4px; color: var(--text-main);">{{ ag.nome.split(' ')[0] }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
     <div class="search-wrap">
       <div class="search-box">
         <span>🔎</span>

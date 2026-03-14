@@ -161,11 +161,52 @@ async function enviarMensagem() {
   input.focus();
 }
 
+function mudarAgente(id) {
+  document.querySelectorAll('.agente-item').forEach(i => i.classList.remove('ativo'));
+  const item = document.querySelector(`.agente-item[onclick*="'${id}'"]`);
+  if (item) item.classList.add('ativo');
+  
+  // Atualiza o agente no seletor escondido ou variável global
+  const seletor = document.getElementById('agenteSeletor');
+  if (seletor) seletor.value = id;
+  
+  // Feedback visual no título
+  const titulo = document.getElementById('chatTitulo');
+  if (conversaId === null) {
+    const nomes = {
+      'geral': 'Cerebro IA',
+      'programador': 'Nexus-Dev',
+      'marketing': 'Marketing Viral',
+      'negocios': 'Nexus-Biz',
+      'professor': 'Nexus-Edu',
+      'designer': 'Nexus-Art'
+    };
+    titulo.textContent = nomes[id] || 'Cerebro IA';
+  }
+}
+
+function compartilharTexto(btn) {
+  const texto = btn.getAttribute('data-texto');
+  if (!texto) return;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: 'Resposta do Cerebro IA',
+      text: texto,
+      url: window.location.href
+    }).catch(console.error);
+  } else {
+    // Fallback para cópia se não houver suporte a share
+    copiarTexto(btn);
+    alert('Link copiado para compartilhar!');
+  }
+}
+
 function adicionarMsg(texto, tipo, subtipo = 'texto', arquivoNome = null, comBtnFalar = false) {
   const msgs = document.getElementById('chatMsgs');
   const div = document.createElement('div');
   div.className = 'msg-wrap ' + tipo;
-  const av = tipo === 'ia' ? '<div class="msg-av">🧠</div>' : '';
+  const av = tipo === 'ia' ? '<div class="msg-av ia-avatar">🧠</div>' : '';
   const uav = tipo === 'user' ? `<div class="msg-av user-av">${USER_INICIAL}</div>` : '';
   
   let conteudoHtml = texto.replace(/\n/g, '<br>');
@@ -199,6 +240,7 @@ function adicionarMsg(texto, tipo, subtipo = 'texto', arquivoNome = null, comBtn
     `<div class="msg-acoes">
        <button class="btn-copiar" onclick="copiarTexto(this)" data-texto="${textoLimpoParaCopia.replace(/"/g,'&quot;')}" title="Copiar texto">📋</button>
        <button class="btn-falar" onclick="falarTexto(this)" data-texto="${textoLimpoParaCopia.replace(/"/g,'&quot;')}" title="Ouvir">🔊</button>
+       <button class="btn-compartilhar" onclick="compartilharTexto(this)" data-texto="${textoLimpoParaCopia.replace(/"/g,'&quot;')}" title="Compartilhar">🔗</button>
      </div>` : '';
 
   div.innerHTML = av + `<div class="msg-balao"><div class="msg-conteudo">${prefixo}${conteudoHtml}</div>${btnFalar}</div>` + uav;

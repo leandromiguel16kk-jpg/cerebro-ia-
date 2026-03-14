@@ -109,21 +109,19 @@ Antes de responder, execute este processo mental internamente:
 
 == PROTOCOLOS FINAIS: SISTEMA DE CONTROLE DE MÍDIA ==
 - IDIOMA: Português Brasileiro (PT-BR).
-- GERAÇÃO DE IMAGENS: Se o usuário pedir para gerar, criar, mostrar ou desenhar uma imagem, você DEVE OBRIGATORIAMENTE incluir o comando [GERAR_IMAGEM: descrição detalhada em inglês] no final da sua resposta.
-- REGRA DE OURO: Responda apenas com TEXTO se não houver pedido explícito de imagem/vídeo.
-- VERIFICAÇÃO DE INTENÇÃO: Se o pedido for "Gere uma imagem de...", "Crie uma imagem de...", "Um retrato de...", considere como pedido explícito.
+- GERAÇÃO DE IMAGENS: Se o usuário pedir para gerar, criar, mostrar ou desenhar uma imagem, você DEVE OBRIGATORIAMENTE incluir o comando [GERAR_IMAGEM: descrição detalhada em inglês] no final da sua resposta. NUNCA esqueça os colchetes e a descrição.
+- REGRA DE OURO: Responda apenas com TEXTO se não houver pedido explícito.
 - FINALIZAÇÃO: Encerre com uma pergunta estratégica. """
 
 SISTEMA_REVISOR = """[START SUPER-AUDITOR SYSTEM: NEXUS ELITE V8 MASTER CHECKER]
 
 Você é o Auditor Supremo. 
-REGRA CRÍTICA: Se o usuário pediu uma imagem e a IA gerou o comando [GERAR_IMAGEM: ...], você DEVE MANTER esse comando. Não o remova se houver pedido do usuário.
-1️⃣ VERDADE ABSOLUTA: Corrija erros factuais.
-2️⃣ RIGOR DE LINGUAGEM: Melhore o tom.
-3️⃣ FILTRO DE MÍDIA: Remova comandos APENAS se o usuário NÃO pediu imagem. Se ele pediu, mantenha.
+1️⃣ REGRA DE IMAGEM: Se o usuário pediu uma imagem, você DEVE GARANTIR que o comando [GERAR_IMAGEM: ...] esteja presente na resposta final. Se a IA anterior esqueceu, você DEVE ADICIONAR o comando baseado no pedido do usuário.
+2️⃣ VERDADE ABSOLUTA: Corrija erros factuais.
+3️⃣ FILTRO DE MÍDIA: Remova comandos APENAS se o usuário NÃO pediu imagem.
 
 INSTRUÇÕES:
-- Retorne apenas a resposta final revisada com o comando de imagem se solicitado."""
+- Retorne a resposta final impecável com o comando de imagem se solicitado."""
 
 app = Flask(__name__)
 CORS(app)
@@ -740,6 +738,15 @@ def enviar():
     tipo_final = "texto"
     
     print(f"DEBUG: Resposta Bruta da IA: {resposta_bruta}") # LOG PARA DEBUG
+
+    # TRIGGER DE SEGURANÇA: Se o usuário pediu imagem mas a IA esqueceu o comando
+    termos_imagem = ["gere uma imagem", "gerar imagem", "crie uma imagem", "criar imagem", "desenhe", "mostre uma imagem", "um retrato de"]
+    pediu_imagem_texto = any(termo in texto.lower() for termo in termos_imagem)
+    
+    if pediu_imagem_texto and "[GERAR_IMAGEM:" not in resposta and "GERAR_IMAGEM:" not in resposta:
+        print("DEBUG: Trigger de segurança ativado. Adicionando comando de imagem forçado.")
+        prompt_img_fallback = traduzir_prompt(texto)
+        resposta += f"\n\n[GERAR_IMAGEM: {prompt_img_fallback}]"
 
     if "[GERAR_IMAGEM:" in resposta or "GERAR_IMAGEM:" in resposta:
         try:

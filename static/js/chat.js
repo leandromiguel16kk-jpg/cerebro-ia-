@@ -178,6 +178,12 @@ function adicionarMsg(texto, tipo, subtipo = 'texto', arquivoNome = null, comBtn
       <img src="/api/download/${arquivoNome}" class="img-gerada" onclick="window.open(this.src, '_blank')">
       <br><a href="/api/download/${arquivoNome}" class="btn-download" target="_blank">📥 Baixar Imagem</a>
     </div>`;
+  } else if (subtipo === 'video_gerado' && arquivoNome) {
+    prefixo = '🎬 ';
+    conteudoHtml += `<br><br><div class="video-gerado-container">
+      <video src="/api/download/${arquivoNome}" class="video-gerado" controls autoplay loop muted></video>
+      <br><a href="/api/download/${arquivoNome}" class="btn-download" target="_blank">📥 Baixar Vídeo</a>
+    </div>`;
   }
   
   const textoLimpoParaCopia = texto.replace(/<br>/g, '\n').replace(/<[^>]+>/g, '');

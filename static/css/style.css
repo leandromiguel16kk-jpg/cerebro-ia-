@@ -337,6 +337,17 @@ input,textarea,select{font-family:inherit}
     transform: scale(1.02);
 }
 
+/* Vídeos Gerados */
+.video-gerado-container {
+    margin-top: 10px;
+    text-align: center;
+}
+.video-gerado {
+    max-width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
 .btn-falar{background:transparent;border:none;font-size:14px;cursor:pointer;margin-left:8px;opacity:.6;transition:.15s;vertical-align:middle;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%}
 .btn-falar:hover{opacity:1;background:var(--bg3)}
 .btn-falar.falando{opacity:1;color:var(--red);animation:pulse-audio 1.5s infinite;background:rgba(239,68,68,0.1)}

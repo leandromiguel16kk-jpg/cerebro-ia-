@@ -117,9 +117,11 @@ Síntese final e uma pergunta estratégica para aprofundar a conversa.
 
 == PROTOCOLOS FINAIS ==
 - Idioma: Português Brasileiro (PT-BR).
-- GERAÇÃO DE IMAGENS: Se o usuário pedir para "gerar uma imagem", "criar uma imagem" ou algo similar, você deve descrever brevemente a imagem que vai criar e, ao final da resposta, usar exatamente este comando: [GERAR_IMAGEM: descrição detalhada em inglês aqui].
+- GERAÇÃO DE IMAGENS: Se o usuário pedir para "gerar uma imagem", use [GERAR_IMAGEM: descrição em inglês].
+- GERAÇÃO DE VÍDEOS: Se o usuário pedir para "gerar um vídeo", "criar um vídeo" ou "vídeo animado", use exatamente este comando: [GERAR_VIDEO: descrição detalhada em inglês aqui].
+- EDIÇÃO DE MÍDIA: Se o usuário pedir para editar uma foto enviada, use [EDITAR_IMAGEM: operação] (operações: preto_e_branco, brilho, texto).
 - GERAÇÃO DE ARQUIVOS: Se pedir um arquivo (PDF, TXT, Word), confirme, gere o conteúdo no chat e forneça o link.
-- Finalização: Sempre termine com uma pergunta provocativa que aprofunde o tema atual."""
+- Finalização: Sempre termine com uma pergunta provocativa que aprofunde o tema atual. """
 
 SISTEMA_REVISOR = """[START REVISOR SYSTEM: NEXUS ELITE V6 MASTER CHECKER]
 
@@ -332,15 +334,15 @@ def img_b64(caminho):
         return base64.b64encode(f.read()).decode()
 
 def gerar_imagem_ai(prompt):
-    """Gera uma imagem usando Pollinations.ai baseado no prompt."""
+    """Gera uma imagem de ALTA QUALIDADE usando Pollinations.ai."""
     try:
-        # Limpa o prompt para URL
-        prompt_url = requests.utils.quote(prompt)
+        # Refinamento de prompt para ultra qualidade
+        prompt_premium = f"Masterpiece, ultra high definition, 8k resolution, highly detailed, professional lighting, cinematic, {prompt}"
+        prompt_url = requests.utils.quote(prompt_premium)
         seed = int(datetime.now().timestamp())
-        url = f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&seed={seed}"
+        url = f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&seed={seed}&model=flux"
         
-        # Baixa a imagem para salvar localmente no servidor
-        r = requests.get(url, timeout=30)
+        r = requests.get(url, timeout=40)
         if r.ok:
             nome_arq = f"img_{int(datetime.now().timestamp())}.jpg"
             caminho = os.path.join(UPLOAD_DIR, nome_arq)
@@ -349,6 +351,48 @@ def gerar_imagem_ai(prompt):
             return nome_arq
     except Exception as e:
         print(f"Erro Gerar Imagem: {e}")
+    return None
+
+def gerar_video_ai(prompt):
+    """Gera um vídeo curto (GIF/MP4) baseado no prompt."""
+    try:
+        prompt_url = requests.utils.quote(prompt)
+        # Pollinations oferece geração de vídeo/frames via endpoint específico
+        url = f"https://image.pollinations.ai/prompt/{prompt_url}?width=512&height=512&model=video&seed={int(datetime.now().timestamp())}"
+        
+        r = requests.get(url, timeout=60)
+        if r.ok:
+            nome_arq = f"vid_{int(datetime.now().timestamp())}.mp4"
+            caminho = os.path.join(UPLOAD_DIR, nome_arq)
+            with open(caminho, "wb") as f:
+                f.write(r.content)
+            return nome_arq
+    except Exception as e:
+        print(f"Erro Gerar Vídeo: {e}")
+    return None
+
+def editar_imagem(caminho_original, operacao, texto_extra=""):
+    """Realiza edições básicas em imagens usando Pillow."""
+    try:
+        from PIL import Image, ImageEnhance, ImageDraw, ImageFont
+        img = Image.open(caminho_original)
+        
+        if operacao == "preto_e_branco":
+            img = img.convert("L")
+        elif operacao == "brilho":
+            enhancer = ImageEnhance.Brightness(img)
+            img = enhancer.enhance(1.5)
+        elif operacao == "texto" and texto_extra:
+            draw = ImageDraw.Draw(img)
+            # Tenta usar uma fonte padrão
+            draw.text((20, 20), texto_extra, fill="white")
+            
+        nome_editado = "edit_" + os.path.basename(caminho_original)
+        caminho_novo = os.path.join(UPLOAD_DIR, nome_editado)
+        img.save(caminho_novo)
+        return nome_editado
+    except Exception as e:
+        print(f"Erro Editar Imagem: {e}")
     return None
 
 def chamar_ia(historico, agente_k="geral", memoria="", imagem_b64=None):
@@ -638,13 +682,37 @@ def enviar():
             inicio = resposta.find("[GERAR_IMAGEM:") + 14
             fim = resposta.find("]", inicio)
             prompt_img = resposta[inicio:fim].strip()
-            # Limpa o comando da resposta de texto
             resposta = resposta.replace(f"[GERAR_IMAGEM:{resposta[inicio:fim]}]", "").strip()
-            
             nome_img = gerar_imagem_ai(prompt_img)
             if nome_img:
                 novo_arquivo = nome_img
                 tipo_final = "imagem_gerada"
+        except: pass
+    elif "[GERAR_VIDEO:" in resposta:
+        try:
+            inicio = resposta.find("[GERAR_VIDEO:") + 13
+            fim = resposta.find("]", inicio)
+            prompt_vid = resposta[inicio:fim].strip()
+            resposta = resposta.replace(f"[GERAR_VIDEO:{resposta[inicio:fim]}]", "").strip()
+            nome_vid = gerar_video_ai(prompt_vid)
+            if nome_vid:
+                novo_arquivo = nome_vid
+                tipo_final = "video_gerado"
+        except: pass
+    elif "[EDITAR_IMAGEM:" in resposta:
+        try:
+            inicio = resposta.find("[EDITAR_IMAGEM:") + 15
+            fim = resposta.find("]", inicio)
+            op = resposta[inicio:fim].strip()
+            resposta = resposta.replace(f"[EDITAR_IMAGEM:{resposta[inicio:fim]}]", "").strip()
+            # Procura a última imagem enviada pelo usuário na conversa
+            msg_img = Mensagem.query.filter_by(conversa_id=conv.id, tipo="imagem").order_by(Mensagem.id.desc()).first()
+            if msg_img:
+                caminho_orig = os.path.join(UPLOAD_DIR, msg_img.arquivo_nome)
+                nome_edit = editar_imagem(caminho_orig, op)
+                if nome_edit:
+                    novo_arquivo = nome_edit
+                    tipo_final = "imagem_gerada"
         except: pass
 
     # Verificação de solicitação de criação de arquivo

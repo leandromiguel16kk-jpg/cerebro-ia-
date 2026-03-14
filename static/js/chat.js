@@ -20,7 +20,35 @@ window.onload = () => {
   if (msgs) msgs.scrollTop = msgs.scrollHeight;
   initVoz();
   autoResize();
+  initPaste();
 };
+
+function initPaste() {
+  document.addEventListener('paste', function (e) {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        const nome = `colagem_${new Date().getTime()}.png`;
+        const tipo = 'imagem';
+        arquivoSelecionado = { file, nome, tipo };
+        
+        const preview = document.getElementById('previewArquivo');
+        const conteudo = document.getElementById('previewConteudo');
+        const reader = new FileReader();
+        reader.onload = ev => { 
+          conteudo.innerHTML = `<img src="${ev.target.result}" style="max-height:120px;border-radius:8px"> <span>${nome} (colada)</span>`; 
+        };
+        reader.readAsDataURL(file);
+        preview.style.display = 'flex';
+        
+        // Focar no input após colar para o usuário digitar se quiser
+        document.getElementById('msgInput').focus();
+        break;
+      }
+    }
+  });
+}
 
 function autoResize() {
   const ta = document.getElementById('msgInput');

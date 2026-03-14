@@ -164,9 +164,9 @@ input,textarea,select{font-family:inherit}
 
 /* CHAT MAIN */
 .chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;background:var(--bg)}
-.chat-topbar{padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;justify-content:space-between;align-items:center;min-height:56px;z-index:100}
-.chat-titulo{font-size:14px;font-weight:600;text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.topbar-right { width: 40px; display: flex; justify-content: flex-end; }
+.chat-topbar{padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;justify-content:space-between;align-items:center;min-height:56px;z-index:100;gap:8px}
+.chat-titulo{font-size:14px;font-weight:600;text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}
+.topbar-right { width: 44px; display: flex; justify-content: flex-end; }
 .topbar-btn-simple { background: transparent; border: none; color: var(--text2); font-size: 20px; padding: 5px; }
 
 /* Hamburger Menu */
@@ -264,6 +264,17 @@ input,textarea,select{font-family:inherit}
     .chat-input-box { padding: 4px 4px 4px 10px; }
     .input-btn { width: 32px; height: 32px; }
     .welcome-icon { font-size: 36px; margin-bottom: 12px; }
+
+    /* Ajustes Gerais para Celular/Tablet */
+    .hero { grid-template-columns: 1fr; padding: 40px 16px; text-align: center; }
+    .hero h1 { font-size: 32px; }
+    .nav-top { padding: 15px 20px; }
+    .nav-links { display: none; }
+    .main-content { padding: 16px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .agentes-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .proj-grid { grid-template-columns: 1fr; }
+    .stat-card { padding: 14px; }
 }
 .topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .topbar-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:.2s}
@@ -422,30 +433,3 @@ input,textarea,select{font-family:inherit}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--text2)}
-
-/* ── MOBILE / ANDROID PWA ── */
-@media(max-width:768px){
-  .app-layout{flex-direction:column}
-  .sidebar{width:100%;height:auto;flex-direction:row;flex-wrap:wrap;padding:8px;gap:4px;border-right:none;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
-  .sidebar-logo{font-size:16px;padding:6px 10px;flex:1}
-  .sidebar-nav{display:flex;flex-direction:row;flex-wrap:wrap;gap:2px;flex:3}
-  .nav-item{padding:6px 10px;font-size:12px;border-radius:8px;white-space:nowrap}
-  .sidebar-user{display:flex;align-items:center;gap:6px;padding:4px 8px}
-  .user-av{width:28px;height:28px;font-size:13px}
-  .user-nome,.user-plano{font-size:11px}
-  .main-content{padding:12px}
-  .dash-header{flex-direction:column;gap:10px}
-  .dash-header h1{font-size:20px}
-  .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  .agentes-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  .agente-card{padding:14px 10px}
-  .ag-icone{font-size:28px}
-  .proj-grid{grid-template-columns:1fr}
-  .msg-content{max-width:90%}
-  .login-box,.register-box{padding:28px 20px;margin:20px}
-  .hero{padding:40px 16px}
-  .hero h1{font-size:28px}
-  .features-grid{grid-template-columns:1fr}
-  .stat-card{padding:14px}
-  .stat-num{font-size:24px}
-}

@@ -142,7 +142,10 @@ async function enviarMensagem() {
     } else {
       adicionarMsg(data.resposta, 'ia', data.tipo, data.arquivo_gerado, true);
       conversaId = data.conversa_id;
-      document.getElementById('chatTitulo').textContent = data.titulo;
+      if (data.titulo) {
+        const tituloElem = document.getElementById('chatTitulo');
+        if (tituloElem) tituloElem.textContent = data.titulo;
+      }
       atualizarHistItem(data.conversa_id, data.titulo, data.resposta);
       if (data.restantes !== null) {
         const el = document.getElementById('limiteTexto');
@@ -204,17 +207,7 @@ function adicionarMsg(texto, tipo, subtipo = 'texto', arquivoNome = null, comBtn
   return div;
 }
 
-function copiarTexto(btn) {
-  const texto = btn.getAttribute('data-texto');
-  navigator.clipboard.writeText(texto).then(() => {
-    btn.innerHTML = '✅';
-    btn.title = 'Copiado!';
-    setTimeout(() => {
-      btn.innerHTML = '📋';
-      btn.title = 'Copiar texto';
-    }, 2000);
-  });
-}
+
 
 function adicionarTyping() {
   const msgs = document.getElementById('chatMsgs');
@@ -436,26 +429,39 @@ function toggleTTS() {
 }
 
 function falarTexto(btn) {
-  const texto = btn.getAttribute('data-texto');
-  
-  if (window.speechSynthesis.speaking && btn.classList.contains('falando')) {
-    window.speechSynthesis.cancel();
-    removerEstadoFalando();
-    return;
-  }
+    const texto = btn.getAttribute('data-texto');
+    if (!texto) return;
 
-  window.speechSynthesis.cancel();
-  removerEstadoFalando();
-  
-  btn.classList.add('falando');
-  btn.innerHTML = '🛑';
-  btn.title = 'Parar de ouvir';
-  
-  falarTextoStr(texto, () => {
-    btn.classList.remove('falando');
-    btn.innerHTML = '🔊';
-    btn.title = 'Ouvir resposta';
-  });
+    if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        btn.classList.remove('falando');
+        return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(texto);
+    utterance.lang = 'pt-BR';
+    utterance.rate = 1.0;
+
+    utterance.onstart = () => btn.classList.add('falando');
+    utterance.onend = () => btn.classList.remove('falando');
+    utterance.onerror = () => btn.classList.remove('falando');
+
+    window.speechSynthesis.speak(utterance);
+}
+
+function copiarTexto(btn) {
+    const texto = btn.getAttribute('data-texto');
+    if (!texto) return;
+
+    navigator.clipboard.writeText(texto).then(() => {
+        const originalIcon = btn.innerText;
+        btn.innerText = '✅';
+        setTimeout(() => {
+            btn.innerText = originalIcon;
+        }, 2000);
+    }).catch(err => {
+        console.error('Erro ao copiar:', err);
+    });
 }
 
 function removerEstadoFalando() {

@@ -122,10 +122,15 @@
       <div class="msg-wrap {{ 'user' if msg.papel == 'user' else 'ia' }}">
         {% if msg.papel == 'assistant' %}<div class="msg-av">🧠</div>{% endif %}
         <div class="msg-balao {% if msg.tipo == 'imagem' %}msg-imagem{% elif msg.tipo == 'arquivo' %}msg-arquivo{% endif %}">
-          {% if msg.tipo == 'imagem' %}📷 {% elif msg.tipo == 'arquivo' %}📁 {% endif %}
-          {{ msg.conteudo }}
+          <div class="msg-conteudo">
+            {% if msg.tipo == 'imagem' %}📷 {% elif msg.tipo == 'arquivo' %}📁 {% endif %}
+            {{ msg.conteudo }}
+          </div>
           {% if msg.papel == 'assistant' %}
-          <button class="btn-falar" onclick="falarTexto(this)" data-texto="{{ msg.conteudo|replace('"','\\"') }}" title="Ouvir resposta">🔊</button>
+          <div class="msg-acoes">
+            <button class="btn-copiar" onclick="copiarTexto(this)" data-texto="{{ msg.conteudo|replace('"','&quot;') }}" title="Copiar resposta">📋</button>
+            <button class="btn-falar" onclick="falarTexto(this)" data-texto="{{ msg.conteudo|replace('"','&quot;') }}" title="Ouvir resposta">🔊</button>
+          </div>
           {% endif %}
         </div>
         {% if msg.papel == 'user' %}<div class="msg-av user-av">{{ current_user.nome[0].upper() }}</div>{% endif %}

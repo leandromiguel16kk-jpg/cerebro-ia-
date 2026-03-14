@@ -755,11 +755,18 @@ def enviar():
             elif "GERAR_IMAGEM:" in resposta:
                 idx = resposta.find("GERAR_IMAGEM:")
                 inicio = idx + 13
-                fim = len(resposta)
+                # Se não houver ], pega até o fim do parágrafo ou da resposta
+                fim_p = resposta.find("\n", inicio)
+                fim = fim_p if fim_p != -1 else len(resposta)
             
             if inicio != -1 and (fim != -1 or fim == len(resposta)):
                 prompt_img = resposta[inicio:fim].strip()
-                print(f"DEBUG: Prompt extraído com sucesso: '{prompt_img}'")
+                print(f"DEBUG: Prompt extraído: '{prompt_img}'")
+                
+                # SE O PROMPT ESTIVER VAZIO, usamos o texto original do usuário como fallback
+                if not prompt_img or len(prompt_img) < 3:
+                    print("DEBUG: Prompt vazio no comando. Usando texto original do usuário.")
+                    prompt_img = texto # 'texto' é a variável que contém a pergunta do usuário
                 
                 # Remove o comando do texto da resposta para o usuário
                 if "[GERAR_IMAGEM:" in resposta:
@@ -769,7 +776,7 @@ def enviar():
                     comando_completo = resposta[resposta.find("GERAR_IMAGEM:"):fim]
                     resposta = resposta.replace(comando_completo, "").strip()
                 
-                # Executa a geração V7 Nuclear
+                # Executa a geração V11 Ultra
                 nome_img = gerar_imagem_ai(prompt_img, current_user.id)
                 
                 if nome_img:

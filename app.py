@@ -733,6 +733,14 @@ def upgrade():
     return jsonify({"ok":True})
 
 
+@app.route("/manifest.json")
+def manifest():
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'manifest.json')
+
+@app.route("/sw.js")
+def sw():
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'sw.js')
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()

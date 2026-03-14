@@ -6,7 +6,7 @@
 <title>{% block titulo %}Cerebro IA{% endblock %}</title>
 
 <!-- PWA -->
-<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+<link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#4f8ef7">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,7 +38,7 @@
 {% block scripts %}{% endblock %}
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/static/sw.js')
+  navigator.serviceWorker.register('/sw.js')
     .then(() => console.log('PWA ativo'))
     .catch(e => console.log('SW erro:', e));
 }

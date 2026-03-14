@@ -480,50 +480,51 @@ def editar_imagem(caminho_original, operacao, texto_extra=""):
     return None
 
 def chamar_ia(historico, agente_k="geral", memoria="", imagem_b64=None):
-    """CHAMADA DE IA COM REDUNDÂNCIA V21: Groq Principal + Fallback para evitar erro 429."""
+    """CHAMADA DE IA COM ROTAÇÃO DE MODELOS V22: Bypass de limite (429) via troca dinâmica de motores."""
     agente = AGENTES.get(agente_k, AGENTES["geral"])
     sys_prompt = SISTEMA_BASE.format(nome=agente["nome"], prompt_agente=agente["prompt"], memoria=memoria)
     msgs = [{"role": "system", "content": sys_prompt}]
     for h in historico[-12:]:
         msgs.append({"role": h["role"], "content": h["content"]})
     
+    # ROTAÇÃO DE MODELOS (V22) - Lista de motores Groq para fallback
+    motores_texto = [
+        "llama-3.3-70b-versatile",   # Principal (Elite)
+        "llama-3.1-70b-versatile",   # Backup 1 (Forte)
+        "llama3-70b-8192",           # Backup 2 (Estável)
+        "mixtral-8x7b-32768",        # Backup 3 (Rápido)
+        "gemma2-9b-it"               # Backup 4 (Leve)
+    ]
+    
     if imagem_b64:
         msgs[-1]["content"] = [
             {"type": "text", "text": msgs[-1]["content"]},
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{imagem_b64}"}}
         ]
-        modelo = MODELO_VIS
-    else:
-        modelo = MODELO_TX
+        # Para visão, usamos rotação entre os modelos vision disponíveis
+        motores_texto = ["llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview"]
 
-    payload = {"model": modelo, "messages": msgs, "temperature": 0.5, "max_tokens": 4096}
-    
-    # TENTATIVA 1: Groq (Principal)
-    try:
-        print(f"DEBUG: [V21] Chamando Groq ({modelo})...")
-        r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=25)
-        if r.status_code == 429:
-            print("DEBUG: [V21] Groq retornou 429 (Limite atingido). Ativando fallback...")
-            raise Exception("Rate limit exceeded")
-        r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"]
-    except Exception as e:
-        print(f"DEBUG: [V21] Falha no Groq: {e}")
-        
-        # TENTATIVA 2: Fallback (OpenRouter ou similar se configurado, ou retry com delay)
-        # Por enquanto, vamos implementar um Retry Simples com backoff se for 429
-        import time
-        for i in range(2):
-            print(f"DEBUG: [V21] Tentando novamente em {2*(i+1)}s...")
-            time.sleep(2 * (i+1))
-            try:
-                r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=30)
-                if r.ok:
-                    return r.json()["choices"][0]["message"]["content"]
-            except:
+    # Tenta cada motor da lista em caso de erro 429
+    for i, modelo in enumerate(motores_texto):
+        try:
+            print(f"DEBUG: [V22] Tentando motor {i+1}: {modelo}...")
+            payload = {"model": modelo, "messages": msgs, "temperature": 0.5, "max_tokens": 4096}
+            r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=25)
+            
+            if r.status_code == 429:
+                print(f"DEBUG: [V22] Motor {modelo} atingiu limite (429). Pulando para o próximo...")
                 continue
                 
-        return "⚠️ O servidor de inteligência está muito ocupado no momento (Erro 429). Por favor, aguarde alguns segundos e tente novamente. Estou trabalhando para expandir minha capacidade!"
+            r.raise_for_status()
+            return r.json()["choices"][0]["message"]["content"]
+            
+        except Exception as e:
+            print(f"DEBUG: [V22] Erro no motor {modelo}: {e}")
+            if i == len(motores_texto) - 1: # Se for o último da lista
+                return "⚠️ Todos os motores de inteligência estão congestionados no momento. Por favor, aguarde 10 segundos e tente novamente. Estou trabalhando para restaurar a conexão!"
+            continue
+            
+    return "⚠️ Erro inesperado na comunicação com o cérebro da IA."
 
 def chamar_revisor(resposta_original):
     payload = {
@@ -777,7 +778,7 @@ def enviar():
     # Ignoramos o revisor se houver comandos de geração de mídia, se a resposta for curta ou se for erro 429
     comandos_midia = ["[GERAR_IMAGEM:", "[GERAR_VIDEO:", "[EDITAR_IMAGEM:", "[GERAR_DOCUMENTO:"]
     tem_comando = any(cmd in resposta_bruta for cmd in comandos_midia)
-    e_erro_429 = "Erro 429" in resposta_bruta or "servidor de inteligência está muito ocupado" in resposta_bruta
+    e_erro_429 = any(x in resposta_bruta for x in ["Erro 429", "servidor de inteligência", "motores de inteligência", "congestionados"])
 
     if len(resposta_bruta) > 150 and not tem_comando and not e_erro_429:
         resposta = chamar_revisor(resposta_bruta)

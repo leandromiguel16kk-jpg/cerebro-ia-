@@ -65,7 +65,10 @@ function handleEnter(e) {
 }
 
 function usarSug(btn) {
-  document.getElementById('msgInput').value = btn.textContent.replace(/^[^\w]+/, '');
+  const strong = btn.querySelector('strong');
+  const p = btn.querySelector('p');
+  const texto = p ? p.textContent : (strong ? strong.textContent : btn.textContent);
+  document.getElementById('msgInput').value = texto;
   enviarMensagem();
 }
 
@@ -73,12 +76,33 @@ function abrirConv(id) { window.location.href = '/chat/' + id; }
 
 async function novaConversa() {
   conversaId = null;
-  document.getElementById('chatTitulo').textContent = 'Nova conversa';
+  document.getElementById('chatTitulo').textContent = 'Cerebro IA';
   document.getElementById('chatMsgs').innerHTML = `
-    <div class="chat-welcome">
+    <div class="chat-welcome" id="welcome">
       <div class="welcome-icon">🧠</div>
-      <h2>Nova conversa</h2>
-      <p>O que voce quer perguntar?</p>
+      <h2>Como posso ajudar hoje?</h2>
+      <div class="sugestoes-grid">
+        <button class="sug-card" onclick="usarSug(this)">
+          <span class="sug-icon">💡</span>
+          <strong>Ideias de Negócio</strong>
+          <p>Me dê ideias de negócio online para começar hoje</p>
+        </button>
+        <button class="sug-card" onclick="usarSug(this)">
+          <span class="sug-icon">📝</span>
+          <strong>Criar Conteúdo</strong>
+          <p>Escreva um post criativo para o meu Instagram</p>
+        </button>
+        <button class="sug-card" onclick="usarSug(this)">
+          <span class="sug-icon">📚</span>
+          <strong>Aprender Algo</strong>
+          <p>Explique o que é Machine Learning de forma simples</p>
+        </button>
+        <button class="sug-card" onclick="usarSug(this)">
+          <span class="sug-icon">💰</span>
+          <strong>Investimentos</strong>
+          <p>Como posso começar a investir com apenas R$100?</p>
+        </button>
+      </div>
     </div>`;
   document.querySelectorAll('.hist-item').forEach(i => i.classList.remove('ativo'));
   document.getElementById('msgInput').focus();
@@ -92,8 +116,8 @@ async function enviarMensagem() {
   input.value = ''; input.style.height = 'auto';
 
   const msgs = document.getElementById('chatMsgs');
-  document.getElementById('welcome')?.remove();
-  document.querySelector('.chat-welcome')?.remove();
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
 
   const textoMostrar = arquivoSelecionado ? `${texto || 'Analise este arquivo'}` : texto;
   const tipoMostrar = arquivoSelecionado?.tipo || 'texto';
@@ -126,7 +150,7 @@ async function enviarMensagem() {
       atualizarHistItem(data.conversa_id, data.titulo, data.resposta);
       if (data.restantes !== null) {
         const el = document.getElementById('limiteTexto');
-        if (el) el.textContent = data.restantes + ' restantes';
+        if (el) el.textContent = data.restantes;
       }
       if (ttsAtivo) falarTextoStr(data.resposta);
     }
@@ -359,11 +383,18 @@ function toggleVoz() {
 function toggleTTS() {
   ttsAtivo = !ttsAtivo;
   const btn = document.getElementById('btnTTS');
+  const btnSidebar = document.getElementById('btnTTS_sidebar');
+  
   if (btn) {
     btn.style.background = ttsAtivo ? 'rgba(79,142,247,0.2)' : '';
     btn.style.borderColor = ttsAtivo ? 'var(--accent)' : '';
     btn.title = ttsAtivo ? 'Voz ativada (clique para desativar)' : 'Ativar voz';
   }
+  
+  if (btnSidebar) {
+    btnSidebar.textContent = ttsAtivo ? '🔊 Voz: Ligada' : '🔇 Voz: Desligada';
+  }
+  
   if (!ttsAtivo && window.speechSynthesis) window.speechSynthesis.cancel();
 }
 

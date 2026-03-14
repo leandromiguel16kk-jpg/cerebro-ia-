@@ -4,7 +4,7 @@
 <div class="app-layout">
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
   <aside class="sidebar sidebar-chat" id="sidebar">
-    <div class="sidebar-logo">🧠 Cerebro IA</div>
+    <div class="sidebar-logo" onclick="novaConversa()" style="cursor:pointer">🧠 Cerebro IA</div>
     <div class="search-wrap">
       <div class="search-box">
         <span>🔎</span>
@@ -48,8 +48,15 @@
       {% endfor %}
     </div>
     <div class="sidebar-bottom">
+      <div class="limite-sidebar">
+        {% if current_user.plano == 'gratuito' %}
+        <span class="limite-label">⚡ Mensagens:</span>
+        <span id="limiteTexto" class="limite-valor">{{ current_user.restantes() }}</span>
+        {% else %}<span class="premium-badge">⭐ Plano Plus</span>{% endif %}
+      </div>
       <a href="{{ url_for('dashboard') }}" class="sb-link">🏠 Dashboard</a>
       <a href="{{ url_for('perfil') }}" class="sb-link">👤 Perfil</a>
+      <button onclick="toggleTTS()" id="btnTTS_sidebar" class="sb-link" style="background:transparent;border:none;width:100%;text-align:left;cursor:pointer">🔊 Voz: Ligada</button>
       <a href="{{ url_for('logout') }}" class="sb-link sb-logout">⬅️ Sair</a>
     </div>
   </aside>
@@ -57,20 +64,13 @@
   <main class="chat-main">
     <div class="chat-topbar">
       <button class="btn-menu-mobile" onclick="toggleSidebar()">☰</button>
-      <div class="chat-titulo" id="chatTitulo">
-        {% if conversa_atual %}{{ conversa_atual.titulo }}{% else %}Nova conversa{% endif %}
+      <div class="chat-titulo" id="chatTitulo" onclick="novaConversa()" style="cursor:pointer">
+        {% if conversa_atual %}{{ conversa_atual.titulo }}{% else %}Cerebro IA{% endif %}
       </div>
       <div class="topbar-right">
         {% if conversa_atual %}
-        <button onclick="abrirMenu(event,{{ conversa_atual.id }},'{{ conversa_atual.titulo|replace("'","\\'")|replace('"','\\"') }}',{{ conversa_atual.fixada|lower }})" class="topbar-btn" title="Opcoes">⋮</button>
-        <a href="{{ url_for('exportar', cid=conversa_atual.id) }}" class="topbar-btn" title="Exportar">📥</a>
+        <button onclick="abrirMenu(event,{{ conversa_atual.id }},'{{ conversa_atual.titulo|replace("'","\\'")|replace('"','\\"') }}',{{ conversa_atual.fixada|lower }})" class="topbar-btn-simple" title="Opcoes">⋮</button>
         {% endif %}
-        <button onclick="toggleTTS()" id="btnTTS" class="topbar-btn {% if not conversa_atual %}{% endif %}" title="Ligar/desligar voz">🔊</button>
-        <div class="limite-badge" id="limiteBadge">
-          {% if current_user.plano == 'gratuito' %}
-          <span id="limiteTexto">{{ current_user.restantes() }} restantes</span>
-          {% else %}<span class="premium-badge">⭐ Premium</span>{% endif %}
-        </div>
       </div>
     </div>
 
@@ -78,19 +78,29 @@
       {% if not mensagens %}
       <div class="chat-welcome" id="welcome">
         <div class="welcome-icon">🧠</div>
-        <h2>Ola! Sou o Cerebro IA</h2>
-        <p>Pergunte qualquer coisa, envie imagens ou arquivos, ou fale pelo microfone!</p>
-        <div class="sugestoes">
-          <button class="sug" onclick="usarSug(this)">💡 Me de ideias de negocio online</button>
-          <button class="sug" onclick="usarSug(this)">📝 Escreva um post para Instagram</button>
-          <button class="sug" onclick="usarSug(this)">📚 Explique o que e machine learning</button>
-          <button class="sug" onclick="usarSug(this)">💰 Como investir com R$100?</button>
-        </div>
-        <div class="welcome-caps">
-          <span>📷 Envie imagens para analise</span>
-          <span>📁 Envie PDFs e documentos</span>
-          <span>🎤 Use sua voz para digitar</span>
-          <span>🔊 Ouça as respostas</span>
+        <h2>Como posso ajudar hoje?</h2>
+        
+        <div class="sugestoes-grid">
+          <button class="sug-card" onclick="usarSug(this)">
+            <span class="sug-icon">💡</span>
+            <strong>Ideias de Negócio</strong>
+            <p>Me dê ideias de negócio online para começar hoje</p>
+          </button>
+          <button class="sug-card" onclick="usarSug(this)">
+            <span class="sug-icon">📝</span>
+            <strong>Criar Conteúdo</strong>
+            <p>Escreva um post criativo para o meu Instagram</p>
+          </button>
+          <button class="sug-card" onclick="usarSug(this)">
+            <span class="sug-icon">📚</span>
+            <strong>Aprender Algo</strong>
+            <p>Explique o que é Machine Learning de forma simples</p>
+          </button>
+          <button class="sug-card" onclick="usarSug(this)">
+            <span class="sug-icon">💰</span>
+            <strong>Investimentos</strong>
+            <p>Como posso começar a investir com apenas R$100?</p>
+          </button>
         </div>
       </div>
       {% else %}

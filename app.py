@@ -352,60 +352,48 @@ def traduzir_prompt(texto):
     return texto
 
 def gerar_imagem_ai(prompt, user_id):
-    """Gera uma imagem usando o motor FLUX.1 (O mais potente e estável)."""
-    # 1. Photorealism Prompting
-    prompt_final = traduzir_prompt(prompt)
-    if not prompt_final or len(prompt_final) < 5: prompt_final = prompt
-    
-    # 2. Limpeza profunda do prompt para a URL (Removendo caracteres problemáticos)
-    # Alguns caracteres como #, ?, & podem quebrar a requisição se não forem tratados
-    prompt_limpo = re.sub(r'[^\w\s,.!-]', '', prompt_final)
-    prompt_url = requests.utils.quote(prompt_limpo)
-    seed = int(datetime.now().timestamp())
-
-    # 3. Motores com URLs Simplificadas e Estáveis
-    # Removido 'safe=false' e 'enhance=true' para evitar bloqueios de firewall/WAF
-    motores = [
-        # MOTOR 1: FLUX (O novo padrão ouro)
-        {"nome": "Flux-Pro", "url": f"https://pollinations.ai/p/{prompt_url}?width=1024&height=1024&seed={seed}&model=flux", "timeout": 60},
+    """SISTEMA DE GERAÇÃO ULTRA-RESILIENTE V14: Foco em estabilidade total."""
+    try:
+        # Se o prompt for curto, traduzimos. Se for longo, já é um prompt complexo.
+        prompt_final = prompt
+        if len(prompt) < 50:
+            prompt_final = traduzir_prompt(prompt)
         
-        # MOTOR 2: TURBO (Fallback ultra-estável)
-        {"nome": "Turbo-Max", "url": f"https://pollinations.ai/p/{prompt_url}?width=1024&height=1024&seed={seed}&model=turbo", "timeout": 40}
-    ]
+        # Limpeza radical de caracteres que quebram URLs
+        prompt_limpo = re.sub(r'[^\w\s,.!-]', '', prompt_final)
+        prompt_url = requests.utils.quote(prompt_limpo)
+        seed = int(datetime.now().timestamp())
 
-    headers = {"User-Agent": UA_PRO}
-    if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR, exist_ok=True)
+        # Motores com URLs diretas e simplificadas (Melhor para evitar bloqueios)
+        motores = [
+            {"nome": "Flux", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=flux&nologo=true&safe=false"},
+            {"nome": "Turbo", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=turbo&nologo=true&safe=false"}
+        ]
 
-    for motor in motores:
-        try:
-            print(f"DEBUG: [V11] Tentando Motor {motor['nome']}...")
-            # Usamos params={} vazio pois os parâmetros já estão na URL construída
-            r = requests.get(motor['url'], timeout=motor['timeout'], stream=True, headers=headers)
-            
-            if r.status_code == 200:
-                nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
-                caminho = os.path.join(UPLOAD_DIR, nome_arq)
+        headers = {"User-Agent": UA_PRO}
+        if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+        for motor in motores:
+            try:
+                print(f"DEBUG: [V14] Tentando motor {motor['nome']}...")
+                # Download direto sem stream para evitar timeouts de conexão aberta
+                r = requests.get(motor['url'], timeout=60, headers=headers)
                 
-                total_size = 0
-                with open(caminho, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=131072):
-                        if chunk:
-                            f.write(chunk)
-                            total_size += len(chunk)
-                
-                # Verificação de Tamanho (Imagens reais de IA têm > 10KB)
-                if total_size > 10000: 
-                    print(f"DEBUG: [V11 SUCCESS] {motor['nome']} gerou {total_size} bytes.")
+                if r.status_code == 200 and len(r.content) > 10000:
+                    nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
+                    caminho = os.path.join(UPLOAD_DIR, nome_arq)
+                    with open(caminho, "wb") as f:
+                        f.write(r.content)
+                    print(f"DEBUG: [V14 SUCCESS] {motor['nome']} gerou {len(r.content)} bytes.")
                     return nome_arq
                 else:
-                    if os.path.exists(caminho): os.remove(caminho)
-                    print(f"DEBUG: [V11] Resposta inválida ({total_size} bytes).")
-            else:
-                print(f"DEBUG: [V11] Erro HTTP {r.status_code} no motor {motor['nome']}")
-        except Exception as e:
-            print(f"DEBUG: [V11] Erro no motor {motor['nome']}: {e}")
-            continue
-            
+                    print(f"DEBUG: [V14] Motor {motor['nome']} falhou (Status: {r.status_code}, Tamanho: {len(r.content)})")
+            except Exception as e:
+                print(f"DEBUG: [V14] Falha no motor {motor['nome']}: {e}")
+                continue
+                
+    except Exception as e:
+        print(f"DEBUG: [V14 CRITICAL] Erro no gerador: {e}")
     return None
 
 def gerar_video_ai(prompt, user_id):

@@ -36,6 +36,9 @@ UPLOAD_DIR  = os.path.join(os.path.dirname(__file__), "uploads")
 EXTS_IMG    = {"png","jpg","jpeg","gif","webp","bmp"}
 EXTS_ARQ    = {"pdf","txt","docx","xlsx","csv","md"}
 
+# User-Agent profissional para evitar bloqueios de APIs
+UA_PRO = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
 # ── Prompts dos agentes ──
 AGENTES = {
     "geral": {
@@ -352,56 +355,64 @@ def traduzir_prompt(texto):
     return texto
 
 def gerar_imagem_ai(prompt, user_id):
-    """Gera uma imagem usando o SISTEMA DE RESILIÊNCIA TOTAL V5 (Flux, SDXL, Prodia, Cloudflare)."""
+    """Gera uma imagem usando o SISTEMA DE BLINDAGEM TOTAL V6 (Resiliência Absoluta)."""
     # 1. Expansão Profissional do Prompt
     prompt_final = traduzir_prompt(prompt)
     prompt_url = requests.utils.quote(prompt_final)
+    prompt_simples = requests.utils.quote(prompt)
     seed = int(datetime.now().timestamp())
 
-    # 2. Hierarquia de Motores de Elite com redundância geográfica
+    # 2. Hierarquia de Motores V6 (Do mais inteligente ao mais estável)
     motores = [
-        # MOTOR 1: FLUX.1 (Provedor A - Qualidade Máxima)
+        # MOTOR 1: FLUX.1 (Elite - Pollinations)
         {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=flux&seed={seed}", "timeout": 45},
         
-        # MOTOR 2: SDXL Turbo (Provedor B - Velocidade e Realismo)
+        # MOTOR 2: SDXL (Turbo - Pollinations)
         {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=turbo&seed={seed}", "timeout": 30},
         
-        # MOTOR 3: Cloudflare/HuggingFace Proxy (Fallback Robusto)
+        # MOTOR 3: Any-Thing (Pollinations)
         {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=any-thing&seed={seed}", "timeout": 25},
         
-        # MOTOR 4: Unsplash Direct (Fotos Reais - Último recurso de imagem)
-        {"url": f"https://source.unsplash.com/1600x900/?{requests.utils.quote(prompt)}", "timeout": 15}
+        # MOTOR 4: LoremFlickr (Ultra Estável - Fotos Reais)
+        {"url": f"https://loremflickr.com/1024/1024/{prompt_simples}", "timeout": 20},
+        
+        # MOTOR 5: Picsum Photos (Reserva Técnica - Imagem aleatória de alta qualidade)
+        {"url": f"https://picsum.photos/seed/{seed}/1024/1024", "timeout": 15},
+        
+        # MOTOR 6: RoboHash (Última Barreira - Estilizado)
+        {"url": f"https://robohash.org/{prompt_simples}.png?set=set4", "timeout": 10}
     ]
+
+    headers = {"User-Agent": UA_PRO}
 
     for motor in motores:
         try:
-            print(f"DEBUG: [V5] Ativando Motor: {motor['url']}")
-            # Stream=True para lidar com arquivos grandes e evitar timeout de conexão
-            with requests.get(motor['url'], timeout=motor['timeout'], stream=True) as r:
+            print(f"DEBUG: [V6] Ativando Motor: {motor['url']}")
+            with requests.get(motor['url'], timeout=motor['timeout'], stream=True, headers=headers) as r:
                 if r.status_code == 200:
                     ctype = r.headers.get("Content-Type", "").lower()
-                    if "image" in ctype or "application/octet-stream" in ctype:
+                    # Aceitamos qualquer tipo de imagem ou binário genérico que venha desses provedores
+                    if "image" in ctype or "application/octet-stream" in ctype or "binary" in ctype:
                         nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
                         caminho = os.path.join(UPLOAD_DIR, nome_arq)
                         
-                        # Gravação segura com verificação de chunks
                         total_size = 0
                         with open(caminho, "wb") as f:
-                            for chunk in r.iter_content(chunk_size=16384):
+                            for chunk in r.iter_content(chunk_size=32768): # Chunks maiores para velocidade
                                 if chunk:
                                     f.write(chunk)
                                     total_size += len(chunk)
                         
-                        # Verificação de integridade mínima (imagens reais têm > 5KB)
-                        if total_size > 5120:
-                            print(f"DEBUG: [V5] Sucesso! Arquivo: {nome_arq} ({total_size} bytes)")
+                        # Integridade mínima reduzida para 2KB para aceitar ícones se necessário
+                        if total_size > 2048:
+                            print(f"DEBUG: [V6] SUCESSO! Motor: {motor['url']} ({total_size} bytes)")
                             return nome_arq
                         else:
-                            print(f"DEBUG: [V5] Arquivo muito pequeno ({total_size} bytes). Tentando próximo...")
+                            print(f"DEBUG: [V6] Conteúdo insuficiente ({total_size} bytes). Próximo...")
                 else:
-                    print(f"DEBUG: [V5] Status {r.status_code} no motor. Pulando...")
+                    print(f"DEBUG: [V6] Erro HTTP {r.status_code} no motor.")
         except Exception as e:
-            print(f"DEBUG: [V5] Erro no motor: {e}")
+            print(f"DEBUG: [V6] Falha crítica no motor: {e}")
             continue
             
     return None

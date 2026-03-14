@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, Response
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, Response, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_cors import CORS
@@ -7,6 +7,8 @@ from werkzeug.utils import secure_filename
 from datetime import datetime, date
 import requests, base64, os, json, re
 from dotenv import load_dotenv
+from fpdf import FPDF
+import markdown
 
 load_dotenv()
 
@@ -232,10 +234,44 @@ class Mensagem(db.Model):
 def load_user(uid): return User.query.get(int(uid))
 
 
-# ─────────────── HELPERS ───────────────
+# ─────────────── UTILITARIOS ───────────────
 
-def ext_ok(nome, exts):
-    return "." in nome and nome.rsplit(".", 1)[1].lower() in exts
+def criar_pdf(texto, nome_arquivo):
+    """Cria um PDF a partir de texto (suporta markdown básico)."""
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
+    
+    # Limpa markdown para o PDF (fpdf2 básico não renderiza MD complexo sem plugins)
+    texto_limpo = re.sub(r'[*_#`~]', '', texto)
+    
+    # Divide em linhas para evitar estouro
+    for linha in texto_limpo.split('\n'):
+        pdf.multi_cell(0, 10, txt=linha.encode('latin-1', 'replace').decode('latin-1'))
+    
+    path = os.path.join(UPLOAD_DIR, nome_arquivo)
+    pdf.output(path)
+    return nome_arquivo
+
+def criar_docx(texto, nome_arquivo):
+    """Cria um DOCX a partir de texto."""
+    if not HAS_DOCX: return None
+    doc = Document()
+    doc.add_paragraph(texto)
+    path = os.path.join(UPLOAD_DIR, nome_arquivo)
+    doc.save(path)
+    return nome_arquivo
+
+def criar_txt(texto, nome_arquivo):
+    """Cria um TXT a partir de texto."""
+    path = os.path.join(UPLOAD_DIR, nome_arquivo)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(texto)
+    return nome_arquivo
+
+def ext_ok(nome, lista):
+    return "." in nome and nome.rsplit(".", 1)[1].lower() in lista
 
 def extrair_texto(caminho, nome):
     ext = nome.rsplit(".", 1)[1].lower() if "." in nome else ""
@@ -530,13 +566,36 @@ def enviar():
     mem_txt = current_user.get_memoria_texto()
     resposta = chamar_ia(historico, conv.agente, mem_txt, imagem_b64)
 
-    db.session.add(Mensagem(conversa_id=conv.id, papel="assistant", conteudo=resposta, tipo="texto"))
+    # Verificação de solicitação de criação de arquivo
+    novo_arquivo = None
+    if "crie um pdf" in texto.lower() or "gerar pdf" in texto.lower() or "salve em pdf" in texto.lower():
+        nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.pdf"
+        novo_arquivo = criar_pdf(resposta, nome_f)
+    elif "crie um txt" in texto.lower() or "gerar txt" in texto.lower():
+        nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.txt"
+        novo_arquivo = criar_txt(resposta, nome_f)
+    elif ("crie um docx" in texto.lower() or "gerar docx" in texto.lower()) and HAS_DOCX:
+        nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.docx"
+        novo_arquivo = criar_docx(resposta, nome_f)
+
+    db.session.add(Mensagem(conversa_id=conv.id, papel="assistant", conteudo=resposta, 
+                           tipo="arquivo" if novo_arquivo else "texto",
+                           arquivo_nome=novo_arquivo))
     current_user.perguntas_hoje += 1
     db.session.commit()
 
     return jsonify({"resposta": resposta, "conversa_id": conv.id, "titulo": conv.titulo,
-                    "restantes": current_user.restantes(), "tipo": tipo_msg})
+                    "restantes": current_user.restantes(), "tipo": tipo_msg,
+                    "arquivo_gerado": novo_arquivo})
 
+
+@app.route("/api/download/<path:filename>")
+@login_required
+def download_arquivo(filename):
+    # Garante que o usuário só baixe arquivos gerados ou enviados por ele
+    if str(current_user.id) not in filename:
+        return jsonify({"erro": "Acesso negado"}), 403
+    return send_from_directory(UPLOAD_DIR, filename, as_attachment=True)
 
 @app.route("/api/buscar-web")
 @login_required

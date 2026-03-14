@@ -80,7 +80,11 @@ async function enviarMensagem() {
     } else if (data.erro) {
       adicionarMsg('❌ ' + data.erro, 'ia');
     } else {
-      adicionarMsg(data.resposta, 'ia', 'texto', null, true);
+      const respTxt = data.arquivo_gerado ? 
+        `${data.resposta}<br><br><a href="/api/download/${data.arquivo_gerado}" class="btn-download" target="_blank">📥 Baixar Arquivo Gerado</a>` : 
+        data.resposta;
+      
+      adicionarMsg(respTxt, 'ia', 'texto', null, true);
       conversaId = data.conversa_id;
       document.getElementById('chatTitulo').textContent = data.titulo;
       atualizarHistItem(data.conversa_id, data.titulo, data.resposta);

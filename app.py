@@ -634,17 +634,18 @@ def enviar():
 
     if arquivo and arquivo.filename:
         nome = secure_filename(arquivo.filename)
+        arq_nome = f"{current_user.id}_{nome}" # Nome real com prefixo para o banco e disco
+        path = os.path.join(UPLOAD_DIR, arq_nome)
+        
         if ext_ok(nome, EXTS_IMG):
             tipo_msg="imagem"
-            path = os.path.join(UPLOAD_DIR, f"{current_user.id}_{nome}")
-            arquivo.save(path); imagem_b64 = img_b64(path); arq_nome = nome
+            arquivo.save(path); imagem_b64 = img_b64(path)
             if not texto: texto = "Analise esta imagem e me diga o que voce ve."
         elif ext_ok(nome, EXTS_ARQ):
             tipo_msg="arquivo"
-            path = os.path.join(UPLOAD_DIR, f"{current_user.id}_{nome}")
             arquivo.save(path)
             conteudo = extrair_texto(path, nome)
-            arq_nome = nome; ctx_arq = f"\n\n[Arquivo enviado: {nome}]\n{conteudo}"
+            ctx_arq = f"\n\n[Arquivo enviado: {nome}]\n{conteudo}"
             if not texto: texto = f"Leia e resuma o conteudo deste arquivo: {nome}"
         else:
             return jsonify({"erro": "Tipo de arquivo nao suportado."}), 400
@@ -791,11 +792,31 @@ def enviar():
 @app.route("/api/download/<path:filename>")
 @login_required
 def download_arquivo(filename):
+    # Log para diagnóstico (visível no console do servidor)
+    print(f"DEBUG: Requisição de download: {filename} por usuário {current_user.id}")
+
     # Garante que o usuário só baixe arquivos gerados ou enviados por ele
     # O nome do arquivo agora contém o ID do usuário (ex: img_1_... ou 1_foto.jpg)
-    if str(current_user.id) not in filename:
+    user_id_str = str(current_user.id)
+    
+    # Verificação de segurança mais precisa: o ID deve estar cercado por delimitadores ou ser o prefixo
+    is_owner = (
+        filename.startswith(f"{user_id_str}_") or 
+        filename.startswith(f"img_{user_id_str}_") or 
+        filename.startswith(f"vid_{user_id_str}_") or 
+        filename.startswith(f"edit_img_{user_id_str}_") or
+        f"_{user_id_str}_" in filename
+    )
+
+    if not is_owner:
+        print(f"DEBUG: ACESSO NEGADO para {filename}")
         return jsonify({"erro": "Acesso negado"}), 403
     
+    caminho_completo = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(caminho_completo):
+        print(f"DEBUG: ARQUIVO NÃO ENCONTRADO no disco: {caminho_completo}")
+        return jsonify({"erro": "Arquivo não encontrado no servidor"}), 404
+        
     # Define se deve baixar ou apenas exibir
     baixar = request.args.get("download") == "1"
     

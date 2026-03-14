@@ -117,8 +117,9 @@ Síntese final e uma pergunta estratégica para aprofundar a conversa.
 
 == PROTOCOLOS FINAIS ==
 - Idioma: Português Brasileiro (PT-BR).
-- Foco Total: Se o tema for História/Política, PROIBIDO usar termos de programação.
-- Neutralidade Absoluta: Não tome partido, apresente fatos verificáveis."""
+- GERAÇÃO DE IMAGENS: Se o usuário pedir para "gerar uma imagem", "criar uma imagem" ou algo similar, você deve descrever brevemente a imagem que vai criar e, ao final da resposta, usar exatamente este comando: [GERAR_IMAGEM: descrição detalhada em inglês aqui].
+- GERAÇÃO DE ARQUIVOS: Se pedir um arquivo (PDF, TXT, Word), confirme, gere o conteúdo no chat e forneça o link.
+- Finalização: Sempre termine com uma pergunta provocativa que aprofunde o tema atual."""
 
 SISTEMA_REVISOR = """[START REVISOR SYSTEM: NEXUS ELITE V6 MASTER CHECKER]
 
@@ -329,6 +330,26 @@ def extrair_texto(caminho, nome):
 def img_b64(caminho):
     with open(caminho, "rb") as f:
         return base64.b64encode(f.read()).decode()
+
+def gerar_imagem_ai(prompt):
+    """Gera uma imagem usando Pollinations.ai baseado no prompt."""
+    try:
+        # Limpa o prompt para URL
+        prompt_url = requests.utils.quote(prompt)
+        seed = int(datetime.now().timestamp())
+        url = f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&seed={seed}"
+        
+        # Baixa a imagem para salvar localmente no servidor
+        r = requests.get(url, timeout=30)
+        if r.ok:
+            nome_arq = f"img_{int(datetime.now().timestamp())}.jpg"
+            caminho = os.path.join(UPLOAD_DIR, nome_arq)
+            with open(caminho, "wb") as f:
+                f.write(r.content)
+            return nome_arq
+    except Exception as e:
+        print(f"Erro Gerar Imagem: {e}")
+    return None
 
 def chamar_ia(historico, agente_k="geral", memoria="", imagem_b64=None):
     agente = AGENTES.get(agente_k, AGENTES["geral"])
@@ -603,34 +624,53 @@ def enviar():
     resposta_bruta = chamar_ia(historico, conv.agente, mem_txt, imagem_b64)
 
     # SISTEMA DE REVISÃO DUPLA (DUAS IAs)
-    # A segunda IA analisa e corrige erros de cronologia, idade e fatos.
-    # Só ativamos para respostas informativas (mais de 150 caracteres) para poupar latência.
     if len(resposta_bruta) > 150:
         resposta = chamar_revisor(resposta_bruta)
     else:
         resposta = resposta_bruta
 
-    # Verificação de solicitação de criação de arquivo (mais flexível)
+    # Verificação de geração de imagem
     novo_arquivo = None
+    tipo_final = "texto"
+    
+    if "[GERAR_IMAGEM:" in resposta:
+        try:
+            inicio = resposta.find("[GERAR_IMAGEM:") + 14
+            fim = resposta.find("]", inicio)
+            prompt_img = resposta[inicio:fim].strip()
+            # Limpa o comando da resposta de texto
+            resposta = resposta.replace(f"[GERAR_IMAGEM:{resposta[inicio:fim]}]", "").strip()
+            
+            nome_img = gerar_imagem_ai(prompt_img)
+            if nome_img:
+                novo_arquivo = nome_img
+                tipo_final = "imagem_gerada"
+        except: pass
+
+    # Verificação de solicitação de criação de arquivo
     t_low = texto.lower()
-    if any(x in t_low for x in ["crie um pdf", "gerar pdf", "salve em pdf", "salvar como pdf", "conteúdo como um arquivo pdf", "conteudo como um arquivo pdf"]):
-        nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.pdf"
-        novo_arquivo = criar_pdf(resposta, nome_f)
-    elif any(x in t_low for x in ["crie um txt", "gerar txt", "salve em txt", "salvar como txt"]):
-        nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.txt"
-        novo_arquivo = criar_txt(resposta, nome_f)
-    elif ("docx" in t_low or "word" in t_low) and ("crie" in t_low or "gerar" in t_low or "salve" in t_low) and HAS_DOCX:
-        nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.docx"
-        novo_arquivo = criar_docx(resposta, nome_f)
+    if not novo_arquivo:
+        if any(x in t_low for x in ["crie um pdf", "gerar pdf", "salve em pdf", "salvar como pdf"]):
+            nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.pdf"
+            novo_arquivo = criar_pdf(resposta, nome_f)
+            tipo_final = "arquivo"
+        elif any(x in t_low for x in ["crie um txt", "gerar txt", "salve em txt", "salvar como txt"]):
+            nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.txt"
+            novo_arquivo = criar_txt(resposta, nome_f)
+            tipo_final = "arquivo"
+        elif ("docx" in t_low or "word" in t_low) and ("crie" in t_low or "gerar" in t_low or "salve" in t_low) and HAS_DOCX:
+            nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.docx"
+            novo_arquivo = criar_docx(resposta, nome_f)
+            tipo_final = "arquivo"
 
     db.session.add(Mensagem(conversa_id=conv.id, papel="assistant", conteudo=resposta, 
-                           tipo="arquivo" if novo_arquivo else "texto",
+                           tipo=tipo_final,
                            arquivo_nome=novo_arquivo))
     current_user.perguntas_hoje += 1
     db.session.commit()
 
     return jsonify({"resposta": resposta, "conversa_id": conv.id, "titulo": conv.titulo,
-                    "restantes": current_user.restantes(), "tipo": tipo_msg,
+                    "restantes": current_user.restantes(), "tipo": tipo_final,
                     "arquivo_gerado": novo_arquivo})
 
 

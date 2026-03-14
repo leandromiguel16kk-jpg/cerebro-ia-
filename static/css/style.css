@@ -320,6 +320,23 @@ input,textarea,select{font-family:inherit}
     background: #1a8e5f;
     transform: scale(1.05);
 }
+
+/* Imagens Geradas */
+.img-gerada-container {
+    margin-top: 10px;
+    text-align: center;
+}
+.img-gerada {
+    max-width: 100%;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: 0.3s;
+}
+.img-gerada:hover {
+    transform: scale(1.02);
+}
+
 .btn-falar{background:transparent;border:none;font-size:14px;cursor:pointer;margin-left:8px;opacity:.6;transition:.15s;vertical-align:middle;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%}
 .btn-falar:hover{opacity:1;background:var(--bg3)}
 .btn-falar.falando{opacity:1;color:var(--red);animation:pulse-audio 1.5s infinite;background:rgba(239,68,68,0.1)}

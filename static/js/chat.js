@@ -140,11 +140,7 @@ async function enviarMensagem() {
     } else if (data.erro) {
       adicionarMsg('❌ ' + data.erro, 'ia');
     } else {
-      const respTxt = data.arquivo_gerado ? 
-        `${data.resposta}<br><br><a href="/api/download/${data.arquivo_gerado}" class="btn-download" target="_blank">📥 Baixar Arquivo Gerado</a>` : 
-        data.resposta;
-      
-      adicionarMsg(respTxt, 'ia', 'texto', null, true);
+      adicionarMsg(data.resposta, 'ia', data.tipo, data.arquivo_gerado, true);
       conversaId = data.conversa_id;
       document.getElementById('chatTitulo').textContent = data.titulo;
       atualizarHistItem(data.conversa_id, data.titulo, data.resposta);
@@ -168,9 +164,21 @@ function adicionarMsg(texto, tipo, subtipo = 'texto', arquivoNome = null, comBtn
   div.className = 'msg-wrap ' + tipo;
   const av = tipo === 'ia' ? '<div class="msg-av">🧠</div>' : '';
   const uav = tipo === 'user' ? `<div class="msg-av user-av">${USER_INICIAL}</div>` : '';
+  
+  let conteudoHtml = texto.replace(/\n/g, '<br>');
   let prefixo = '';
+  
   if (subtipo === 'imagem') prefixo = '📷 ';
-  else if (subtipo === 'arquivo') prefixo = '📁 ';
+  else if (subtipo === 'arquivo' && arquivoNome) {
+    prefixo = '📁 ';
+    conteudoHtml += `<br><br><a href="/api/download/${arquivoNome}" class="btn-download" target="_blank">📥 Baixar Arquivo</a>`;
+  } else if (subtipo === 'imagem_gerada' && arquivoNome) {
+    prefixo = '🎨 ';
+    conteudoHtml += `<br><br><div class="img-gerada-container">
+      <img src="/api/download/${arquivoNome}" class="img-gerada" onclick="window.open(this.src, '_blank')">
+      <br><a href="/api/download/${arquivoNome}" class="btn-download" target="_blank">📥 Baixar Imagem</a>
+    </div>`;
+  }
   
   const textoLimpoParaCopia = texto.replace(/<br>/g, '\n').replace(/<[^>]+>/g, '');
   const btnFalar = (comBtnFalar && tipo === 'ia') ?
@@ -179,7 +187,7 @@ function adicionarMsg(texto, tipo, subtipo = 'texto', arquivoNome = null, comBtn
        <button class="btn-falar" onclick="falarTexto(this)" data-texto="${textoLimpoParaCopia.replace(/"/g,'&quot;')}" title="Ouvir">🔊</button>
      </div>` : '';
 
-  div.innerHTML = av + `<div class="msg-balao"><div class="msg-conteudo">${prefixo}${texto.replace(/\n/g, '<br>')}</div>${btnFalar}</div>` + uav;
+  div.innerHTML = av + `<div class="msg-balao"><div class="msg-conteudo">${prefixo}${conteudoHtml}</div>${btnFalar}</div>` + uav;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
   return div;

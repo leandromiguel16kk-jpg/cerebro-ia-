@@ -333,7 +333,7 @@ def img_b64(caminho):
     with open(caminho, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
-def gerar_imagem_ai(prompt):
+def gerar_imagem_ai(prompt, user_id):
     """Gera uma imagem de ALTA QUALIDADE com sistema de redundância (Fallback)."""
     # Lista de modelos e provedores para tentar em sequência caso um falhe
     tentativas = [
@@ -355,7 +355,7 @@ def gerar_imagem_ai(prompt):
             
             r = requests.get(url, timeout=45)
             if r.ok and len(r.content) > 1000: # Verifica se não é uma imagem de erro pequena
-                nome_arq = f"img_{int(datetime.now().timestamp())}_{seed % 1000}.jpg"
+                nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}_{seed % 1000}.jpg"
                 caminho = os.path.join(UPLOAD_DIR, nome_arq)
                 with open(caminho, "wb") as f:
                     f.write(r.content)
@@ -371,7 +371,7 @@ def gerar_imagem_ai(prompt):
             
     return None
 
-def gerar_video_ai(prompt):
+def gerar_video_ai(prompt, user_id):
     """Gera um vídeo curto (GIF/MP4) baseado no prompt."""
     try:
         prompt_url = requests.utils.quote(prompt)
@@ -380,7 +380,7 @@ def gerar_video_ai(prompt):
         
         r = requests.get(url, timeout=60)
         if r.ok:
-            nome_arq = f"vid_{int(datetime.now().timestamp())}.mp4"
+            nome_arq = f"vid_{user_id}_{int(datetime.now().timestamp())}.mp4"
             caminho = os.path.join(UPLOAD_DIR, nome_arq)
             with open(caminho, "wb") as f:
                 f.write(r.content)
@@ -724,7 +724,7 @@ def enviar():
                     comando_completo = resposta[resposta.find("GERAR_IMAGEM:"):fim]
                     resposta = resposta.replace(comando_completo, "").strip()
                 
-                nome_img = gerar_imagem_ai(prompt_img)
+                nome_img = gerar_imagem_ai(prompt_img, current_user.id)
                 if nome_img:
                     print(f"DEBUG: Imagem gerada com sucesso: {nome_img}")
                     novo_arquivo = nome_img
@@ -740,7 +740,7 @@ def enviar():
             fim = resposta.find("]", inicio)
             prompt_vid = resposta[inicio:fim].strip()
             resposta = resposta.replace(f"[GERAR_VIDEO:{resposta[inicio:fim]}]", "").strip()
-            nome_vid = gerar_video_ai(prompt_vid)
+            nome_vid = gerar_video_ai(prompt_vid, current_user.id)
             if nome_vid:
                 novo_arquivo = nome_vid
                 tipo_final = "video_gerado"
@@ -792,9 +792,23 @@ def enviar():
 @login_required
 def download_arquivo(filename):
     # Garante que o usuário só baixe arquivos gerados ou enviados por ele
+    # O nome do arquivo agora contém o ID do usuário (ex: img_1_... ou 1_foto.jpg)
     if str(current_user.id) not in filename:
         return jsonify({"erro": "Acesso negado"}), 403
-    return send_from_directory(UPLOAD_DIR, filename, as_attachment=True)
+    
+    # Define se deve baixar ou apenas exibir
+    baixar = request.args.get("download") == "1"
+    
+    # Tenta detectar o mimetype correto
+    import mimetypes
+    mtype, _ = mimetypes.guess_type(filename)
+    if not mtype:
+        if filename.endswith(".pdf"): mtype = "application/pdf"
+        elif filename.endswith(".docx"): mtype = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        elif filename.endswith(".mp4"): mtype = "video/mp4"
+        else: mtype = "application/octet-stream"
+
+    return send_from_directory(UPLOAD_DIR, filename, as_attachment=baixar, mimetype=mtype)
 
 @app.route("/api/buscar-web")
 @login_required

@@ -325,6 +325,8 @@ input,textarea,select{font-family:inherit}
 .img-gerada-container {
     margin-top: 10px;
     text-align: center;
+    position: relative;
+    min-height: 100px;
 }
 .img-gerada {
     max-width: 100%;
@@ -332,9 +334,26 @@ input,textarea,select{font-family:inherit}
     cursor: pointer;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     transition: 0.3s;
+    background: var(--bg3);
+    display: block;
+    margin: 0 auto;
 }
-.img-gerada:hover {
+.img-gerada.error {
+    opacity: 0.5;
+    filter: grayscale(1);
+    padding: 20px;
+    width: 80px;
+}
+.img-gerada:hover:not(.error) {
     transform: scale(1.02);
+}
+.img-error-msg {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--red);
+    padding: 8px;
+    border-radius: 8px;
+    margin: 10px auto;
+    max-width: 90%;
 }
 
 /* Vídeos Gerados */

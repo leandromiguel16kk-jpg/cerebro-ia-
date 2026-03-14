@@ -171,18 +171,23 @@ function adicionarMsg(texto, tipo, subtipo = 'texto', arquivoNome = null, comBtn
   if (subtipo === 'imagem') prefixo = '📷 ';
   else if (subtipo === 'arquivo' && arquivoNome) {
     prefixo = '📁 ';
-    conteudoHtml += `<br><br><a href="/api/download/${arquivoNome}" class="btn-download" target="_blank">📥 Baixar Arquivo</a>`;
+    conteudoHtml += `<br><br><a href="/api/download/${arquivoNome}?download=1" class="btn-download" target="_blank">📥 Baixar Arquivo</a>`;
   } else if (subtipo === 'imagem_gerada' && arquivoNome) {
     prefixo = '🎨 ';
     conteudoHtml += `<br><br><div class="img-gerada-container">
-      <img src="/api/download/${arquivoNome}" class="img-gerada" onclick="window.open(this.src, '_blank')">
-      <br><a href="/api/download/${arquivoNome}" class="btn-download" target="_blank">📥 Baixar Imagem</a>
+      <img src="/api/download/${arquivoNome}" class="img-gerada" 
+           onclick="window.open(this.src, '_blank')" 
+           onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImdyYXkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4='; this.classList.add('error'); this.nextElementSibling.style.display='block'">
+      <div class="img-error-msg" style="display:none; color: #ff4444; font-size: 12px; margin: 10px 0;">
+        ⚠️ Erro ao carregar prévia. O arquivo pode estar sendo processado ou o acesso foi negado.
+      </div>
+      <br><a href="/api/download/${arquivoNome}?download=1" class="btn-download" target="_blank">📥 Baixar Imagem</a>
     </div>`;
   } else if (subtipo === 'video_gerado' && arquivoNome) {
     prefixo = '🎬 ';
     conteudoHtml += `<br><br><div class="video-gerado-container">
       <video src="/api/download/${arquivoNome}" class="video-gerado" controls autoplay loop muted></video>
-      <br><a href="/api/download/${arquivoNome}" class="btn-download" target="_blank">📥 Baixar Vídeo</a>
+      <br><a href="/api/download/${arquivoNome}?download=1" class="btn-download" target="_blank">📥 Baixar Vídeo</a>
     </div>`;
   }
   

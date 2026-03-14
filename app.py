@@ -365,62 +365,57 @@ def traduzir_prompt(texto):
     return texto
 
 def gerar_imagem_ai(prompt, user_id):
-    """SISTEMA DE DESBLOQUEIO TOTAL V15: Bypass de filtros e novos motores."""
+    """SISTEMA DE DESBLOQUEIO TOTAL V17 (BYPASS SUPREMO): Otimização de entrega e motores redundantes."""
     try:
-        # 1. Preparação do Prompt Master
+        # 1. Preparação do Prompt
         prompt_final = prompt
         if len(prompt) < 60:
             prompt_final = traduzir_prompt(prompt)
         
-        # Limpeza de caracteres para URL
-        prompt_limpo = re.sub(r'[^\w\s,.!-]', '', prompt_final)
-        prompt_url = requests.utils.quote(prompt_limpo)
+        # Codificação segura para URL (sem remover caracteres úteis)
+        prompt_url = requests.utils.quote(prompt_final)
         seed = int(datetime.now().timestamp())
 
-        # 2. MOTORES DE ELITE (Novos Endpoints Desbloqueados)
+        # 2. MOTORES DE ELITE (V17 - Endpoints de Alta Disponibilidade)
         motores = [
-            # MOTOR 1: Flux Pro (Via Rota Direta)
-            {"nome": "Flux-Pro", "url": f"https://pollinations.ai/p/{prompt_url}?width=1024&height=1024&seed={seed}&model=flux&nologo=true&nofeed=true"},
+            # MOTOR 1: Pollinations Image API (Oficial e Estável)
+            {"nome": "Pollinations-Master", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&nologo=true&nofeed=true"},
             
-            # MOTOR 2: Turbo Ultra (Rota de Alta Velocidade)
-            {"nome": "Turbo-Ultra", "url": f"https://pollinations.ai/p/{prompt_url}?width=1024&height=1024&seed={seed}&model=turbo&nologo=true&nofeed=true"},
+            # MOTOR 2: Flux Engine (Via Rota de Bypass)
+            {"nome": "Flux-Bypass", "url": f"https://pollinations.ai/p/{prompt_url}?width=1024&height=1024&seed={seed}&model=flux&nologo=true"},
             
-            # MOTOR 3: Engine V3 (Fallback Nuclear)
-            {"nome": "Engine-V3", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&nologo=true"}
+            # MOTOR 3: Turbo Turbo (Fallback de Velocidade)
+            {"nome": "Turbo-Ultra", "url": f"https://pollinations.ai/p/{prompt_url}?width=1024&height=1024&seed={seed}&model=turbo&nologo=true"}
         ]
 
-        # Headers de navegador real para evitar bloqueios de bot
+        # Headers de Navegador Real (V17)
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "User-Agent": UA_PRO,
             "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive"
+            "Cache-Control": "no-cache"
         }
-
-        if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR, exist_ok=True)
 
         for motor in motores:
             try:
-                print(f"DEBUG: [V15] Ativando Bypass no motor {motor['nome']}...")
-                # Verificação de SSL desativada temporariamente para evitar bloqueios de certificado
-                r = requests.get(motor['url'], timeout=45, headers=headers, verify=True)
+                print(f"DEBUG: [V17] Tentando {motor['nome']}...")
+                # timeout aumentado para 60s para imagens complexas
+                r = requests.get(motor['url'], timeout=60, headers=headers, verify=False) # verify=False para evitar problemas de CA
                 
-                if r.status_code == 200 and len(r.content) > 5000:
+                if r.status_code == 200 and len(r.content) > 10000:
                     nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
                     caminho = os.path.join(UPLOAD_DIR, nome_arq)
                     with open(caminho, "wb") as f:
                         f.write(r.content)
-                    print(f"DEBUG: [V15 SUCCESS] {motor['nome']} entregou {len(r.content)} bytes.")
+                    print(f"DEBUG: [V17 SUCCESS] {motor['nome']} entregou a imagem.")
                     return nome_arq
                 else:
-                    print(f"DEBUG: [V15] Motor {motor['nome']} retornou {r.status_code}")
+                    print(f"DEBUG: [V17] {motor['nome']} falhou (Status: {r.status_code})")
             except Exception as e:
-                print(f"DEBUG: [V15] Erro no motor {motor['nome']}: {e}")
+                print(f"DEBUG: [V17] Erro no motor {motor['nome']}: {e}")
                 continue
                 
     except Exception as e:
-        print(f"DEBUG: [V15 CRITICAL] Erro geral: {e}")
+        print(f"DEBUG: [V17 CRITICAL] Erro geral: {e}")
     return None
 
 def gerar_video_ai(prompt, user_id):
@@ -458,7 +453,7 @@ def editar_imagem(caminho_original, operacao, texto_extra=""):
             draw.text((20, 20), texto_extra, fill="white")
             
         nome_editado = "edit_" + os.path.basename(caminho_original)
-        caminho_novo = os.path.join(UPLOAD_DIR, nome_editated)
+        caminho_novo = os.path.join(UPLOAD_DIR, nome_editado)
         img.save(caminho_novo)
         return nome_editado
     except Exception as e:
@@ -754,22 +749,23 @@ def enviar():
     
     print(f"DEBUG: Resposta Bruta da IA: {resposta_bruta}") # LOG PARA DEBUG
 
-    # 1. DETECÇÃO DE COMANDO DE IMAGEM (Regex Infalível)
-    # Busca por [GERAR_IMAGEM: descrição] ou GERAR_IMAGEM: descrição
-    match_img = re.search(r'\?\[GERAR_IMAGEM:\s*([^\]\n]+)\]?', resposta)
+    # 1. DETECÇÃO DE COMANDO DE IMAGEM (Regex V17 - Robusta)
+    # Busca por [GERAR_IMAGEM: descrição]
+    match_img = re.search(r'\[GERAR_IMAGEM:\s*([^\]\n]+)\]', resposta)
     
     # TRIGGER DE SEGURANÇA: Se o usuário pediu imagem mas a IA esqueceu o comando ou o comando veio vazio
     termos_imagem = ["gere uma imagem", "gerar imagem", "crie uma imagem", "criar imagem", "desenhe", "mostre uma imagem", "um retrato de"]
     pediu_imagem_texto = any(termo in texto.lower() for termo in termos_imagem)
     
     if (pediu_imagem_texto and not match_img) or (match_img and len(match_img.group(1).strip()) < 3):
-        print("DEBUG: Trigger de segurança v16 ativado.")
+        print("DEBUG: Trigger de segurança v17 ativado.")
         prompt_img = traduzir_prompt(texto)
-        # Remove qualquer rastro de comando mal formado
+        # Se havia um comando mal formado, removemos para não poluir a resposta
         if match_img:
             resposta = resposta.replace(match_img.group(0), "").strip()
     elif match_img:
         prompt_img = match_img.group(1).strip()
+        # Remove o comando da resposta final para o usuário não ver o código
         resposta = resposta.replace(match_img.group(0), "").strip()
     else:
         prompt_img = None
@@ -785,10 +781,10 @@ def enviar():
             else:
                 resposta += "\n\n⚠️ (Erro ao processar a imagem. O motor gráfico pode estar sobrecarregado.)"
         except Exception as e:
-            print(f"DEBUG: [V16 ERROR] Falha imagem: {e}")
+            print(f"DEBUG: [V17 ERROR] Falha imagem: {e}")
 
     # 2. DETECÇÃO DE VÍDEO
-    match_vid = re.search(r'\[GERAR_VIDEO:\s*([^\]]+)\]', resposta)
+    match_vid = re.search(r'\[GERAR_VIDEO:\s*([^\]\n]+)\]', resposta)
     if match_vid:
         prompt_vid = match_vid.group(1).strip()
         resposta = resposta.replace(match_vid.group(0), "").strip()
@@ -796,6 +792,9 @@ def enviar():
         if nome_vid:
             novo_arquivo = nome_vid
             tipo_final = "video_gerado"
+
+    # Limpeza final de qualquer comando residual [GERAR_...] que possa ter sobrado
+    resposta = re.sub(r'\[GERAR_(IMAGEM|VIDEO):.*?\]', '', resposta).strip()
 
     # 3. DETECÇÃO DE ARQUIVOS (PDF, TXT, DOCX)
     t_low = texto.lower()

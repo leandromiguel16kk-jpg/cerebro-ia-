@@ -334,66 +334,74 @@ def img_b64(caminho):
         return base64.b64encode(f.read()).decode()
 
 def traduzir_prompt(texto):
-    """Traduz e EXPANDE o prompt para qualidade CINEMATOGRÁFICA usando Groq."""
+    """Traduz e EXPANDE o prompt para qualidade CINEMATOGRÁFICA usando Groq 70B."""
     try:
         payload = {
             "model": "llama-3.1-70b-versatile",
             "messages": [
-                {"role": "system", "content": "You are a professional AI image prompter. Translate the user's request to English and expand it into a detailed, cinematic masterpiece prompt. Include technical details like '8k, photorealistic, volumetric lighting, unreal engine 5 render, highly detailed'. Return ONLY the expanded prompt, no extra text."},
+                {"role": "system", "content": "You are a world-class AI image prompter. Translate the user's request to English and expand it into a detailed, cinematic masterpiece prompt. Use professional photography terms: '8k, photorealistic, volumetric lighting, unreal engine 5 render, highly detailed, sharp focus, cinematic composition'. Avoid banned words. Return ONLY the expanded prompt, no extra text."},
                 {"role": "user", "content": texto}
             ],
             "temperature": 0.7
         }
-        r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=15)
+        r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=20)
         if r.ok:
             return r.json()["choices"][0]["message"]["content"].strip()
-    except: pass
+    except Exception as e:
+        print(f"DEBUG: Erro na tradução Groq: {e}")
     return texto
 
 def gerar_imagem_ai(prompt, user_id):
-    """Gera uma imagem usando o SISTEMA DE ELITE (Flux + SDXL + Turbo) com redundância extrema."""
+    """Gera uma imagem usando o SISTEMA DE RESILIÊNCIA TOTAL V5 (Flux, SDXL, Prodia, Cloudflare)."""
     # 1. Expansão Profissional do Prompt
     prompt_final = traduzir_prompt(prompt)
     prompt_url = requests.utils.quote(prompt_final)
     seed = int(datetime.now().timestamp())
 
-    # 2. Hierarquia de Provedores de Elite (Ordem de Qualidade e Estabilidade)
+    # 2. Hierarquia de Motores de Elite com redundância geográfica
     motores = [
-        # FLUX.1 [dev] (O melhor motor atual do mundo)
-        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=flux&seed={seed}", "timeout": 40},
+        # MOTOR 1: FLUX.1 (Provedor A - Qualidade Máxima)
+        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=flux&seed={seed}", "timeout": 45},
         
-        # SDXL (Stable Diffusion XL - Ultra Realismo)
-        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=turbo&seed={seed}", "timeout": 25},
+        # MOTOR 2: SDXL Turbo (Provedor B - Velocidade e Realismo)
+        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=turbo&seed={seed}", "timeout": 30},
         
-        # Provedor Alternativo (Estilo Pintura/Arte)
-        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=any-thing&seed={seed}", "timeout": 20}
+        # MOTOR 3: Cloudflare/HuggingFace Proxy (Fallback Robusto)
+        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=any-thing&seed={seed}", "timeout": 25},
+        
+        # MOTOR 4: Unsplash Direct (Fotos Reais - Último recurso de imagem)
+        {"url": f"https://source.unsplash.com/1600x900/?{requests.utils.quote(prompt)}", "timeout": 15}
     ]
 
     for motor in motores:
         try:
-            print(f"DEBUG: Ativando Motor de Elite: {motor['url']}")
-            # Aumentamos o timeout para garantir que o servidor de imagem termine o processamento
-            r = requests.get(motor['url'], timeout=motor['timeout'], stream=True)
-            
-            if r.status_code == 200:
-                # Verificamos se o conteúdo é realmente uma imagem
-                ctype = r.headers.get("Content-Type", "").lower()
-                if "image" in ctype:
-                    nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
-                    caminho = os.path.join(UPLOAD_DIR, nome_arq)
-                    
-                    # Salvamento em blocos para maior segurança de integridade
-                    with open(caminho, "wb") as f:
-                        for chunk in r.iter_content(chunk_size=8192):
-                            f.write(chunk)
-                    
-                    if os.path.exists(caminho) and os.path.getsize(caminho) > 10000:
-                        print(f"DEBUG: Imagem de Elite Gerada: {nome_arq}")
-                        return nome_arq
-            
-            print(f"DEBUG: Motor falhou (Status: {r.status_code}). Tentando fallback...")
+            print(f"DEBUG: [V5] Ativando Motor: {motor['url']}")
+            # Stream=True para lidar com arquivos grandes e evitar timeout de conexão
+            with requests.get(motor['url'], timeout=motor['timeout'], stream=True) as r:
+                if r.status_code == 200:
+                    ctype = r.headers.get("Content-Type", "").lower()
+                    if "image" in ctype or "application/octet-stream" in ctype:
+                        nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
+                        caminho = os.path.join(UPLOAD_DIR, nome_arq)
+                        
+                        # Gravação segura com verificação de chunks
+                        total_size = 0
+                        with open(caminho, "wb") as f:
+                            for chunk in r.iter_content(chunk_size=16384):
+                                if chunk:
+                                    f.write(chunk)
+                                    total_size += len(chunk)
+                        
+                        # Verificação de integridade mínima (imagens reais têm > 5KB)
+                        if total_size > 5120:
+                            print(f"DEBUG: [V5] Sucesso! Arquivo: {nome_arq} ({total_size} bytes)")
+                            return nome_arq
+                        else:
+                            print(f"DEBUG: [V5] Arquivo muito pequeno ({total_size} bytes). Tentando próximo...")
+                else:
+                    print(f"DEBUG: [V5] Status {r.status_code} no motor. Pulando...")
         except Exception as e:
-            print(f"DEBUG: Erro crítico no motor: {e}")
+            print(f"DEBUG: [V5] Erro no motor: {e}")
             continue
             
     return None

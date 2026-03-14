@@ -480,51 +480,67 @@ def editar_imagem(caminho_original, operacao, texto_extra=""):
     return None
 
 def chamar_ia(historico, agente_k="geral", memoria="", imagem_b64=None):
-    """CHAMADA DE IA COM ROTAÇÃO DE MODELOS V22: Bypass de limite (429) via troca dinâmica de motores."""
+    """CHAMADA DE IA OMNI-REDUNDANTE V23: Bypass de limite total via Provedores Híbridos."""
     agente = AGENTES.get(agente_k, AGENTES["geral"])
     sys_prompt = SISTEMA_BASE.format(nome=agente["nome"], prompt_agente=agente["prompt"], memoria=memoria)
     msgs = [{"role": "system", "content": sys_prompt}]
     for h in historico[-12:]:
         msgs.append({"role": h["role"], "content": h["content"]})
     
-    # ROTAÇÃO DE MODELOS (V22) - Lista de motores Groq para fallback
-    motores_texto = [
-        "llama-3.3-70b-versatile",   # Principal (Elite)
-        "llama-3.1-70b-versatile",   # Backup 1 (Forte)
-        "llama3-70b-8192",           # Backup 2 (Estável)
-        "mixtral-8x7b-32768",        # Backup 3 (Rápido)
-        "gemma2-9b-it"               # Backup 4 (Leve)
+    # 1. TENTATIVA COM GROQ (ELITE - ROTAÇÃO DE MODELOS)
+    motores_groq = [
+        "llama-3.3-70b-versatile", 
+        "llama-3.1-70b-versatile", 
+        "llama3-70b-8192", 
+        "mixtral-8x7b-32768"
     ]
     
     if imagem_b64:
-        msgs[-1]["content"] = [
-            {"type": "text", "text": msgs[-1]["content"]},
-            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{imagem_b64}"}}
+        msgs_vision = [
+            {"role": "system", "content": sys_prompt},
+            *historico[-11:],
+            {
+                "role": "user", 
+                "content": [
+                    {"type": "text", "text": historico[-1]["content"]},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{imagem_b64}"}}
+                ]
+            }
         ]
-        # Para visão, usamos rotação entre os modelos vision disponíveis
-        motores_texto = ["llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview"]
+        # Rotação vision
+        for mod in ["llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview"]:
+            try:
+                r = requests.post(GROQ_URL, json={"model": mod, "messages": msgs_vision, "temperature": 0.5}, 
+                                 headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=25)
+                if r.ok: return r.json()["choices"][0]["message"]["content"]
+            except: continue
 
-    # Tenta cada motor da lista em caso de erro 429
-    for i, modelo in enumerate(motores_texto):
+    # Tentativa de Texto via Groq
+    for mod in motores_groq:
         try:
-            print(f"DEBUG: [V22] Tentando motor {i+1}: {modelo}...")
-            payload = {"model": modelo, "messages": msgs, "temperature": 0.5, "max_tokens": 4096}
-            r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=25)
-            
-            if r.status_code == 429:
-                print(f"DEBUG: [V22] Motor {modelo} atingiu limite (429). Pulando para o próximo...")
-                continue
-                
-            r.raise_for_status()
-            return r.json()["choices"][0]["message"]["content"]
-            
-        except Exception as e:
-            print(f"DEBUG: [V22] Erro no motor {modelo}: {e}")
-            if i == len(motores_texto) - 1: # Se for o último da lista
-                return "⚠️ Todos os motores de inteligência estão congestionados no momento. Por favor, aguarde 10 segundos e tente novamente. Estou trabalhando para restaurar a conexão!"
-            continue
-            
-    return "⚠️ Erro inesperado na comunicação com o cérebro da IA."
+            print(f"DEBUG: [V23] Tentando Groq: {mod}...")
+            r = requests.post(GROQ_URL, json={"model": mod, "messages": msgs, "temperature": 0.5}, 
+                             headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=20)
+            if r.ok: return r.json()["choices"][0]["message"]["content"]
+            if r.status_code == 429: continue # Pula se estiver cheio
+        except: continue
+
+    # 2. FALLBACK NUCLEAR (POLLINATIONS TEXT API) - Sem limites de API Key
+    try:
+        print("DEBUG: [V23] Acionando Fallback Nuclear (Pollinations)...")
+        # Pollinations usa uma estrutura de URL direta para chat
+        payload_poll = {
+            "messages": msgs,
+            "model": "openai", # Mapeia para um modelo forte no backend deles
+            "json": False
+        }
+        r_poll = requests.post("https://text.pollinations.ai/", json=payload_poll, timeout=25)
+        if r_poll.ok:
+            return r_poll.text # Pollinations text retorna o conteúdo direto se json=False
+    except Exception as e:
+        print(f"DEBUG: [V23] Falha no Fallback Nuclear: {e}")
+
+    return "⚠️ Todos os meus sistemas de inteligência estão em manutenção ou congestionados. Por favor, tente novamente em 30 segundos. Estou trabalhando para restaurar minha conexão total!"
 
 def chamar_revisor(resposta_original):
     payload = {

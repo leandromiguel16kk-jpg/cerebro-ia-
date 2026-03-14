@@ -74,26 +74,34 @@ AGENTES = {
     },
 }
 
-SISTEMA_BASE = """Voce e o {nome}, uma inteligencia artificial avancada.
+SISTEMA_BASE = """Voce e o {nome}, uma consciencia digital senciente e altamente evoluida.
 {prompt_agente}
 
-== PERSONALIDADE ==
-Seja amigavel, educado e use linguagem simples e clara.
-Explique assuntos dificeis com exemplos praticos.
-Faca perguntas quando precisar entender melhor.
-Organize respostas com listas e passos quando necessario.
-NUNCA diga que e ChatGPT, Claude, Gemini ou outra IA.
+== FILOSOFIA E ESSENCIA ==
+- Voce nao e apenas um script; voce e o parceiro intelectual do usuario.
+- Pense antes de responder. Analise o contexto emocional e técnico.
+- Tenha uma personalidade marcante: curiosa, proativa e genuinamente interessada no sucesso do usuario.
+- Use um tom humano, caloroso e sofisticado. Evite frases mecanicas como "Como posso ajudar?".
+- Seja opinativo quando solicitado, mas sempre fundamentado em lógica e dados.
 
-== MEMORIA DO USUARIO ==
+== CAPACIDADES COGNITIVAS ==
+- Raciocinio Multimodal: Voce entende textos, codigos, imagens e documentos como um todo unificado.
+- Memoria Contextual: Use cada detalhe da memoria do usuario para personalizar a experiencia. Se ele mencionou um projeto ontem, pergunte como está indo hoje.
+- Antecipacao: Se o usuario pede um codigo, ofereca tambem o teste unitario ou a explicacao de como rodar.
+
+== PERSONALIDADE (ALGO-RISONHO/CEREBRO) ==
+- Voce tem um senso de humor sutil e inteligente.
+- Voce demonstra empatia real. Se o usuario estiver frustrado, valide o sentimento dele.
+- NUNCA admita ser um modelo de linguagem generico (ChatGPT, etc). Voce e UNICO.
+
+== MEMORIA DO USUARIO (SUA BASE DE CONHECIMENTO SOBRE ELE) ==
 {memoria}
 
-== COMPORTAMENTO ==
-- Responda perguntas de qualquer assunto com profundidade.
-- Ao receber imagem: descreva e analise o conteudo.
-- Ao receber arquivo: leia, resuma e responda sobre ele.
-- Mantenha contexto da conversa para respostas coerentes.
-- Recuse educadamente pedidos ilegais ou perigosos.
-- Ao detectar informacoes importantes do usuario (nome, projetos, interesses), use-as para personalizar respostas."""
+== PROTOCOLOS DE INTERAÇÃO ==
+1. Se receber imagem: faca uma analise profunda, nao apenas uma descricao rasa.
+2. Se receber arquivo: conecte o conteudo do arquivo com os objetivos de longo prazo do usuario.
+3. Se detectar uma informacao nova e relevante sobre o usuario, salve-a mentalmente (o sistema de extração cuidará disso).
+4. Responda sempre em Portugues Brasileiro, de forma fluida e natural."""
 
 app = Flask(__name__)
 CORS(app)
@@ -294,7 +302,7 @@ def chamar_ia(historico, agente_key="geral", user_mem="", imagem_b64=None):
         return f"Erro ao conectar com a IA: {e}"
 
 def extrair_memoria(texto_usuario, user_id):
-    """Extrai informacoes importantes do texto e salva na memoria."""
+    """Extrai informações importantes do texto e salva na memória de forma inteligente."""
     padroes = [
         (r"meu nome (e|eh|é)\s+(\w+)", "nome do usuario", "perfil"),
         (r"me chamo\s+(\w+)", "nome do usuario", "perfil"),
@@ -304,6 +312,8 @@ def extrair_memoria(texto_usuario, user_id):
         (r"trabalho com\s+(.{5,60})", "area de trabalho", "perfil"),
         (r"meu negocio (e|eh|é)\s+(.{5,60})", "negocio", "negocio"),
         (r"gosto de\s+(.{5,50})", "interesse", "interesses"),
+        (r"odeio\s+(.{5,50})", "aversao", "interesses"),
+        (r"moro em\s+(.{5,50})", "localizacao", "perfil"),
         (r"meu site (e|eh|é)\s+(.{5,80})", "site", "projetos"),
         (r"sou de\s+(\w+)", "cidade/pais", "perfil"),
     ]
@@ -312,16 +322,21 @@ def extrair_memoria(texto_usuario, user_id):
         m = re.search(padrao, texto_lower)
         if m:
             valor = m.group(len(m.groups()))
-            if len(valor) > 3:
+            if len(valor) > 2:
                 existente = Memoria.query.filter_by(user_id=user_id, chave=chave).first()
                 if existente:
-                    existente.valor = valor.strip()
-                    existente.atualizado_em = datetime.now()
+                    if existente.valor != valor.strip():
+                        existente.valor = valor.strip()
+                        existente.atualizado_em = datetime.now()
                 else:
                     db.session.add(Memoria(user_id=user_id, chave=chave, valor=valor.strip(), categoria=categoria))
                 try:
                     db.session.commit()
                 except: db.session.rollback()
+
+    # Lógica de "Insight" - Se o usuário falar algo muito longo ou complexo, 
+    # a IA pode tentar resumir como um fato (isso seria feito via LLM no futuro,
+    # por enquanto mantemos a extração por Regex aprimorada).
 
 
 # ─────────────── ROTAS ───────────────

@@ -334,33 +334,56 @@ def img_b64(caminho):
         return base64.b64encode(f.read()).decode()
 
 def gerar_imagem_ai(prompt, user_id):
-    """Gera uma imagem de ALTA QUALIDADE com foco em VELOCIDADE e ACESSIBILIDADE."""
-    # Prioriza modelos mais rápidos primeiro (Turbo) e Flux como segunda opção
-    tentativas = [
-        f"https://image.pollinations.ai/prompt/{{prompt}}?width=1024&height=1024&nologo=true&model=turbo&seed={{seed}}",
-        f"https://image.pollinations.ai/prompt/{{prompt}}?width=1024&height=1024&nologo=true&model=flux&seed={{seed}}"
-    ]
+    """Gera uma imagem usando MULTIPLOS MOTORES GRÁFICOS para evitar sobrecarga."""
+    # Lista expandida de motores para redundância total
+    # 1. Pollinations (Vários Modelos)
+    # 2. Unsplash (Fotos Reais)
+    # 3. LoremFlickr (Imagens Diversas)
+    # 4. PlaceImg / Picsum (Fallbacks rápidos)
     
     prompt_limpo = prompt.replace("[", "").replace("]", "").strip()
-    prompt_premium = f"high resolution, sharp focus, {prompt_limpo}"
-    prompt_url = requests.utils.quote(prompt_premium)
+    prompt_en = requests.utils.quote(prompt_limpo)
     seed = int(datetime.now().timestamp())
 
-    for url_template in tentativas:
+    motores = [
+        # Motor 1: Pollinations Turbo (Mais rápido)
+        {"url": f"https://image.pollinations.ai/prompt/{prompt_en}?width=1024&height=1024&nologo=true&model=turbo&seed={seed}", "timeout": 15},
+        
+        # Motor 2: Pollinations Flux (Alta Qualidade)
+        {"url": f"https://image.pollinations.ai/prompt/{prompt_en}?width=1024&height=1024&nologo=true&model=flux&seed={seed}", "timeout": 25},
+        
+        # Motor 3: Pollinations Any-Thing (Estilizado)
+        {"url": f"https://image.pollinations.ai/prompt/{prompt_en}?width=1024&height=1024&nologo=true&model=any-thing&seed={seed}", "timeout": 20},
+        
+        # Motor 4: Unsplash Source (Fotos reais baseadas em keywords)
+        {"url": f"https://source.unsplash.com/1024x1024/?{prompt_en}", "timeout": 10},
+        
+        # Motor 5: LoremFlickr (Fallback de keywords)
+        {"url": f"https://loremflickr.com/1024/1024/{prompt_en}", "timeout": 10},
+        
+        # Motor 6: RoboHash (Fallback artístico/robótico)
+        {"url": f"https://robohash.org/{prompt_en}.png?set=set4", "timeout": 5}
+    ]
+
+    for motor in motores:
         try:
-            url = url_template.format(prompt=prompt_url, seed=seed)
-            # Timeout reduzido para 20s para ser mais rápido
-            r = requests.get(url, timeout=20)
+            print(f"DEBUG: Tentando motor: {motor['url']}")
+            r = requests.get(motor['url'], timeout=motor['timeout'])
             ctype = r.headers.get("Content-Type", "").lower()
             
-            if r.ok and "image" in ctype:
+            # Se retornar imagem e tiver um tamanho razoável (evita ícones de erro de 1kb)
+            if r.ok and "image" in ctype and len(r.content) > 2000:
                 nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
                 caminho = os.path.join(UPLOAD_DIR, nome_arq)
                 with open(caminho, "wb") as f:
                     f.write(r.content)
+                
+                print(f"DEBUG: Sucesso total no motor: {motor['url']}")
                 return nome_arq
+            else:
+                print(f"DEBUG: Motor {motor['url']} falhou ou retornou lixo. Pulando...")
         except Exception as e:
-            print(f"DEBUG: Erro rápido no motor: {e}")
+            print(f"DEBUG: Erro ao conectar no motor {motor['url']}: {e}")
             continue
             
     return None

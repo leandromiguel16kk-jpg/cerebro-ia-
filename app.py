@@ -366,57 +366,59 @@ def traduzir_prompt(texto):
     return texto
 
 def gerar_imagem_ai(prompt, user_id):
-    """SISTEMA DE DESBLOQUEIO TOTAL V17 (BYPASS SUPREMO): Otimização de entrega e motores redundantes."""
+    """SISTEMA DE DESBLOQUEIO TOTAL V19 (MOTOR TRIPLO): Bypass supremo com motores redundantes de elite."""
     try:
         # 1. Preparação do Prompt
         prompt_final = prompt
         if len(prompt) < 60:
             prompt_final = traduzir_prompt(prompt)
         
-        # Codificação segura para URL (sem remover caracteres úteis)
+        # Codificação segura para URL
         prompt_url = requests.utils.quote(prompt_final)
         seed = int(datetime.now().timestamp())
 
-        # 2. MOTORES DE ELITE (V17 - Endpoints de Alta Disponibilidade)
+        # 2. MOTORES DE ELITE (V19 - Redundância Total)
         motores = [
-            # MOTOR 1: Pollinations Image API (Oficial e Estável)
-            {"nome": "Pollinations-Master", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&nologo=true&nofeed=true"},
+            # MOTOR 1: FLUX (Alta Fidelidade)
+            {"nome": "Flux-Master", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=flux&nologo=true&nofeed=true"},
             
-            # MOTOR 2: Flux Engine (Via Rota de Bypass)
-            {"nome": "Flux-Bypass", "url": f"https://pollinations.ai/p/{prompt_url}?width=1024&height=1024&seed={seed}&model=flux&nologo=true"},
+            # MOTOR 2: TURBO (Velocidade Extrema)
+            {"nome": "Turbo-Speed", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=turbo&nologo=true"},
             
-            # MOTOR 3: Turbo Turbo (Fallback de Velocidade)
-            {"nome": "Turbo-Ultra", "url": f"https://pollinations.ai/p/{prompt_url}?width=1024&height=1024&seed={seed}&model=turbo&nologo=true"}
+            # MOTOR 3: STABLE DIFFUSION (Fallback Estável)
+            {"nome": "SD-Legacy", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=stable-diffusion-xl&nologo=true"}
         ]
 
-        # Headers de Navegador Real (V17)
+        # Headers de Navegador Real (V19) - Mais robustos
         headers = {
-            "User-Agent": UA_PRO,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-            "Cache-Control": "no-cache"
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "no-cache",
+            "Referer": "https://pollinations.ai/"
         }
 
         for motor in motores:
             try:
-                print(f"DEBUG: [V17] Tentando {motor['nome']}...")
-                # timeout aumentado para 60s para imagens complexas
-                r = requests.get(motor['url'], timeout=60, headers=headers, verify=False) # verify=False para evitar problemas de CA
+                print(f"DEBUG: [V19] Acionando {motor['nome']}...")
+                # Timeout de 60s e desativação de verificação SSL para evitar bloqueios de CDN
+                r = requests.get(motor['url'], timeout=60, headers=headers, verify=False)
                 
-                if r.status_code == 200 and len(r.content) > 10000:
+                if r.status_code == 200 and len(r.content) > 15000:
                     nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
                     caminho = os.path.join(UPLOAD_DIR, nome_arq)
                     with open(caminho, "wb") as f:
                         f.write(r.content)
-                    print(f"DEBUG: [V17 SUCCESS] {motor['nome']} entregou a imagem.")
+                    print(f"DEBUG: [V19 SUCCESS] {motor['nome']} entregou a imagem ({len(r.content)} bytes).")
                     return nome_arq
                 else:
-                    print(f"DEBUG: [V17] {motor['nome']} falhou (Status: {r.status_code})")
+                    print(f"DEBUG: [V19] {motor['nome']} retornou erro ou imagem pequena (Status: {r.status_code})")
             except Exception as e:
-                print(f"DEBUG: [V17] Erro no motor {motor['nome']}: {e}")
+                print(f"DEBUG: [V19] Falha no motor {motor['nome']}: {e}")
                 continue
                 
     except Exception as e:
-        print(f"DEBUG: [V17 CRITICAL] Erro geral: {e}")
+        print(f"DEBUG: [V19 CRITICAL] Erro catastrófico: {e}")
     return None
 
 def gerar_video_ai(prompt, user_id):

@@ -340,7 +340,10 @@ def gerar_imagem_ai(prompt):
         prompt_premium = f"Masterpiece, ultra high definition, 8k resolution, highly detailed, professional lighting, cinematic, {prompt}"
         prompt_url = requests.utils.quote(prompt_premium)
         seed = int(datetime.now().timestamp())
+        # URL robusta com seed e modelo flux
         url = f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&seed={seed}&model=flux"
+        
+        print(f"DEBUG: Solicitando imagem para: {url}")
         
         r = requests.get(url, timeout=40)
         if r.ok:
@@ -348,7 +351,14 @@ def gerar_imagem_ai(prompt):
             caminho = os.path.join(UPLOAD_DIR, nome_arq)
             with open(caminho, "wb") as f:
                 f.write(r.content)
-            return nome_arq
+            
+            # Verifica se o arquivo foi realmente escrito e tem tamanho
+            if os.path.exists(caminho) and os.path.getsize(caminho) > 0:
+                return nome_arq
+            else:
+                print(f"DEBUG: Arquivo salvo está vazio ou não existe: {caminho}")
+        else:
+            print(f"DEBUG: Resposta da API Pollinations não foi OK: {r.status_code}")
     except Exception as e:
         print(f"Erro Gerar Imagem: {e}")
     return None
@@ -681,17 +691,41 @@ def enviar():
     novo_arquivo = None
     tipo_final = "texto"
     
-    if "[GERAR_IMAGEM:" in resposta:
+    print(f"DEBUG: Resposta Bruta da IA: {resposta_bruta}") # LOG PARA DEBUG
+
+    if "[GERAR_IMAGEM:" in resposta or "GERAR_IMAGEM:" in resposta:
         try:
-            inicio = resposta.find("[GERAR_IMAGEM:") + 14
-            fim = resposta.find("]", inicio)
-            prompt_img = resposta[inicio:fim].strip()
-            resposta = resposta.replace(f"[GERAR_IMAGEM:{resposta[inicio:fim]}]", "").strip()
-            nome_img = gerar_imagem_ai(prompt_img)
-            if nome_img:
-                novo_arquivo = nome_img
-                tipo_final = "imagem_gerada"
-        except: pass
+            print("DEBUG: Comando de imagem detectado!")
+            # Tenta encontrar o comando mesmo se a IA não colocar os colchetes perfeitamente
+            if "[GERAR_IMAGEM:" in resposta:
+                inicio = resposta.find("[GERAR_IMAGEM:") + 14
+                fim = resposta.find("]", inicio)
+            else:
+                inicio = resposta.find("GERAR_IMAGEM:") + 13
+                fim = len(resposta) # Pega até o fim se não houver colchete
+            
+            if inicio > 12:
+                prompt_img = resposta[inicio:fim].strip()
+                print(f"DEBUG: Prompt extraído: {prompt_img}")
+                
+                # Limpa qualquer comando da resposta final
+                if "[GERAR_IMAGEM:" in resposta:
+                    comando_completo = resposta[resposta.find("[GERAR_IMAGEM:"):fim+1]
+                    resposta = resposta.replace(comando_completo, "").strip()
+                else:
+                    comando_completo = resposta[resposta.find("GERAR_IMAGEM:"):fim]
+                    resposta = resposta.replace(comando_completo, "").strip()
+                
+                nome_img = gerar_imagem_ai(prompt_img)
+                if nome_img:
+                    print(f"DEBUG: Imagem gerada com sucesso: {nome_img}")
+                    novo_arquivo = nome_img
+                    tipo_final = "imagem_gerada"
+                else:
+                    print("DEBUG: Falha ao gerar imagem na função gerar_imagem_ai")
+                    resposta += "\n\n⚠️ (Erro ao processar a imagem. O motor gráfico pode estar sobrecarregado.)"
+        except Exception as e:
+            print(f"DEBUG: Erro no bloco de geração de imagem: {e}")
     elif "[GERAR_VIDEO:" in resposta:
         try:
             inicio = resposta.find("[GERAR_VIDEO:") + 13

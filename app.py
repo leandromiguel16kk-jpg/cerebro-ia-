@@ -111,9 +111,10 @@ Sempre que o usuário demonstrar interesse em empreender ou lucrar:
 5. MONETIZAÇÃO: Como escalar e ganhar dinheiro de verdade.
 
 == 3. COMANDOS DE MÁQUINA (AUTOMAÇÃO) ==
-- IMAGENS: Use [GERAR_IMAGEM: descrição detalhada em inglês com estilo fotorealista].
+- IMAGENS: Use [GERAR_IMAGEM: descrição detalhada em inglês].
 - VÍDEOS: Use [GERAR_VIDEO: descrição].
-- DOCUMENTOS: Se o usuário pedir um relatório, responda com o conteúdo e o sistema gerará o PDF/DOCX automaticamente.
+- DOCUMENTOS: Use [GERAR_DOCUMENTO: nome_do_arquivo.pdf] (ou .docx, .txt).
+- IMPORTANTE: Sempre que o usuário pedir para 'criar', 'gerar' ou 'salvar' um arquivo/documento, você DEVE obrigatoriamente usar o comando [GERAR_DOCUMENTO: nome.ext] ao final da resposta.
 
 == 4. MEMÓRIA DO USUÁRIO ==
 Contexto recuperado:
@@ -793,10 +794,30 @@ def enviar():
             novo_arquivo = nome_vid
             tipo_final = "video_gerado"
 
-    # Limpeza final de qualquer comando residual [GERAR_...] que possa ter sobrado
-    resposta = re.sub(r'\[GERAR_(IMAGEM|VIDEO):.*?\]', '', resposta).strip()
+    # 3. DETECÇÃO DE DOCUMENTO (NOVO V18)
+    match_doc = re.search(r'\[GERAR_DOCUMENTO:\s*([^\]\n]+)\]', resposta)
+    if match_doc:
+        nome_doc = match_doc.group(1).strip()
+        resposta = resposta.replace(match_doc.group(0), "").strip()
+        
+        # Determina extensão
+        ext = nome_doc.split('.')[-1].lower() if '.' in nome_doc else 'pdf'
+        nome_base = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.{ext}"
+        
+        if ext == 'pdf':
+            novo_arquivo = criar_pdf(resposta, nome_base)
+            tipo_final = "arquivo"
+        elif ext in ['docx', 'word']:
+            novo_arquivo = criar_docx(resposta, nome_base)
+            tipo_final = "arquivo"
+        elif ext in ['txt', 'texto']:
+            novo_arquivo = criar_txt(resposta, nome_base)
+            tipo_final = "arquivo"
 
-    # 3. DETECÇÃO DE ARQUIVOS (PDF, TXT, DOCX)
+    # Limpeza final de qualquer comando residual [GERAR_...] que possa ter sobrado
+    resposta = re.sub(r'\[GERAR_(IMAGEM|VIDEO|DOCUMENTO):.*?\]', '', resposta).strip()
+
+    # 4. DETECÇÃO POR INTENÇÃO (Fallback se a IA não usar o comando)
     t_low = texto.lower()
     if not novo_arquivo:
         # Se o usuário pediu explicitamente um arquivo, nós forçamos a criação

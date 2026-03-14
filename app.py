@@ -125,11 +125,11 @@ Síntese final e uma pergunta estratégica para aprofundar a conversa.
 
 == PROTOCOLOS FINAIS ==
 - Idioma: Português Brasileiro (PT-BR).
-- GERAÇÃO DE IMAGENS: Se o usuário pedir para "gerar uma imagem", use [GERAR_IMAGEM: descrição em inglês].
-- GERAÇÃO DE VÍDEOS: Se o usuário pedir para "gerar um vídeo", "criar um vídeo" ou "vídeo animado", use exatamente este comando: [GERAR_VIDEO: descrição detalhada em inglês aqui].
-- EDIÇÃO DE MÍDIA: Se o usuário pedir para editar uma foto enviada, use [EDITAR_IMAGEM: operação] (operações: preto_e_branco, brilho, texto).
-- GERAÇÃO DE ARQUIVOS: Se pedir um arquivo (PDF, TXT, Word), confirme, gere o conteúdo no chat e forneça o link.
-- Finalização: Sempre termine com uma pergunta provocativa que aprofunde o tema atual. """
+- GERAÇÃO DE IMAGENS: Quando o usuário pedir para gerar, criar ou mostrar uma imagem de algo, você DEVE responder amigavelmente e incluir o comando exatamente assim: [GERAR_IMAGEM: descrição detalhada em inglês aqui]. Não coloque o comando dentro de blocos de código.
+- GERAÇÃO DE VÍDEOS: Para vídeos, use: [GERAR_VIDEO: descrição detalhada em inglês aqui].
+- EDIÇÃO DE MÍDIA: Para editar fotos enviadas, use [EDITAR_IMAGEM: operação] (preto_e_branco, brilho, texto).
+- GERAÇÃO DE ARQUIVOS: Se pedir PDF/TXT/Word, gere o conteúdo e forneça o link.
+- Finalização: Sempre termine com uma pergunta provocativa. """
 
 SISTEMA_REVISOR = """[START REVISOR SYSTEM: NEXUS ELITE V6 MASTER CHECKER]
 
@@ -342,86 +342,96 @@ def img_b64(caminho):
         return base64.b64encode(f.read()).decode()
 
 def traduzir_prompt(texto):
-    """Traduz e EXPANDE o prompt para qualidade CINEMATOGRÁFICA usando Groq 70B."""
+    """MASTER PROMPTER V2: Traduz e expande para descrições cinematográficas ultra-detalhadas."""
     try:
         payload = {
-            "model": "llama-3.1-70b-versatile",
+            "model": MODELO_TX,
             "messages": [
-                {"role": "system", "content": "You are a world-class AI image prompter. Translate the user's request to English and expand it into a detailed, cinematic masterpiece prompt. Use professional photography terms: '8k, photorealistic, volumetric lighting, unreal engine 5 render, highly detailed, sharp focus, cinematic composition'. Avoid banned words. Return ONLY the expanded prompt, no extra text."},
-                {"role": "user", "content": texto}
+                {
+                    "role": "system", 
+                    "content": (
+                        "You are the world's best AI image prompt engineer. Your goal is to transform simple requests into "
+                        "complex, 100-word masterpieces. \n"
+                        "RULES:\n"
+                        "1. Translate to English.\n"
+                        "2. ADD artistic style, lighting (volumetric, cinematic, soft), camera (85mm, wide-angle), "
+                        "and texture details (hyper-realistic, 8k, highly detailed).\n"
+                        "3. IF the user asks for 'cartoon', '3D', or 'anime', use specific terms like 'Studio Ghibli style', "
+                        "'Pixar 3D render', 'vibrant colors', 'clean lines'.\n"
+                        "4. NO negative words. NO extra text. ONLY the final prompt."
+                    )
+                },
+                {"role": "user", "content": f"Create a masterpiece prompt for: {texto}"}
             ],
-            "temperature": 0.7
+            "temperature": 0.6
         }
         r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=20)
         if r.ok:
-            return r.json()["choices"][0]["message"]["content"].strip()
+            res = r.json()["choices"][0]["message"]["content"].strip()
+            return res.replace('"', '').replace('"', '')
     except Exception as e:
-        print(f"DEBUG: Erro na tradução Groq: {e}")
+        print(f"DEBUG: Erro Master Prompter: {e}")
     return texto
 
 def gerar_imagem_ai(prompt, user_id):
-    """Gera uma imagem usando o SISTEMA DE BLINDAGEM NUCLEAR V7 (Resiliência Total)."""
-    # 1. Preparação do Prompt
+    """Gera uma imagem usando o motor FLUX PRO (via Pollinations V3)."""
+    # 1. Master Prompting
     prompt_final = traduzir_prompt(prompt)
+    if not prompt_final or len(prompt_final) < 5: prompt_final = prompt
+    
+    # 2. Reforço Estético (Booster)
+    # Se não houver estilos específicos, adicionamos qualidade ultra
+    booster = ", masterpiece, 8k, highly detailed, professional photography, cinematic lighting, sharp focus"
+    if not any(word in prompt_final.lower() for word in ["cartoon", "anime", "sketch", "drawing", "3d"]):
+        prompt_final += booster
+        
+    print(f"DEBUG: [V3] Prompt Final: {prompt_final}")
+    
+    # 3. Preparação do Endpoint (URL direta para imagem)
     prompt_url = requests.utils.quote(prompt_final)
-    prompt_simples = requests.utils.quote(prompt)
     seed = int(datetime.now().timestamp())
 
-    # 2. Hierarquia de Motores V7 (Testados para Railway)
+    # Motores Dedicados (Somente IA Real)
     motores = [
-        # MOTOR 1: Pollinations Flux (O mais inteligente)
-        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=flux&seed={seed}", "timeout": 45},
+        # MOTOR 1: FLUX (O novo rei da IA)
+        {"nome": "Flux", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=flux&nologo=true", "timeout": 65},
         
-        # MOTOR 2: Pollinations Turbo (O mais rápido)
-        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=turbo&seed={seed}", "timeout": 30},
-        
-        # MOTOR 3: LoremFlickr (Indestrutível - Fotos Reais)
-        {"url": f"https://loremflickr.com/1024/1024/{prompt_simples}", "timeout": 20},
-        
-        # MOTOR 4: PlaceIMG / Picsum (Fallback de emergência)
-        {"url": f"https://picsum.photos/seed/{seed}/1024/1024", "timeout": 15}
+        # MOTOR 2: TURBO (Fallback rápido)
+        {"nome": "Turbo", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=turbo&nologo=true", "timeout": 45}
     ]
 
     headers = {"User-Agent": UA_PRO}
-    
-    # Garante que o diretório existe antes de tentar salvar
-    if not os.path.exists(UPLOAD_DIR):
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
+    if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR, exist_ok=True)
 
     for motor in motores:
         try:
-            print(f"DEBUG: [V7] Ativando Motor: {motor['url']}")
-            # Adicionamos verify=False apenas se necessário, mas mantemos True por padrão para segurança
-            with requests.get(motor['url'], timeout=motor['timeout'], stream=True, headers=headers) as r:
-                if r.status_code == 200:
-                    ctype = r.headers.get("Content-Type", "").lower()
-                    
-                    nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
-                    caminho = os.path.join(UPLOAD_DIR, nome_arq)
-                    
-                    total_size = 0
-                    with open(caminho, "wb") as f:
-                        for chunk in r.iter_content(chunk_size=65536): # Chunks ainda maiores para fluidez
-                            if chunk:
-                                f.write(chunk)
-                                total_size += len(chunk)
-                    
-                    # Se salvamos algo substancial, consideramos sucesso
-                    if total_size > 1000:
-                        print(f"DEBUG: [V7] SUCESSO! Arquivo salvo: {nome_arq} ({total_size} bytes)")
-                        return nome_arq
-                    else:
-                        if os.path.exists(caminho): os.remove(caminho)
-                        print(f"DEBUG: [V7] Arquivo inválido ou pequeno ({total_size} bytes).")
+            print(f"DEBUG: [V3] Ativando {motor['nome']}...")
+            r = requests.get(motor['url'], timeout=motor['timeout'], stream=True, headers=headers)
+            
+            if r.status_code == 200:
+                nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
+                caminho = os.path.join(UPLOAD_DIR, nome_arq)
+                
+                total_size = 0
+                with open(caminho, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=131072): # Buffer maior para velocidade
+                        if chunk:
+                            f.write(chunk)
+                            total_size += len(chunk)
+                
+                # Verificação de Integridade (Imagens 1024x1024 JPEGs reais têm > 50KB)
+                if total_size > 30000: 
+                    print(f"DEBUG: [V3 SUCCESS] {motor['nome']} entregou {total_size} bytes.")
+                    return nome_arq
                 else:
-                    print(f"DEBUG: [V7] Motor retornou erro HTTP {r.status_code}")
+                    if os.path.exists(caminho): os.remove(caminho)
+                    print(f"DEBUG: [V3] Imagem corrompida ou pequena ({total_size} bytes).")
+            else:
+                print(f"DEBUG: [V3] Erro HTTP {r.status_code} no motor {motor['nome']}")
         except Exception as e:
-            print(f"DEBUG: [V7] Falha no motor {motor['url']}: {e}")
+            print(f"DEBUG: [V3] Falha Crítica {motor['nome']}: {e}")
             continue
             
-    # ÚLTIMA BARREIRA: Se tudo falhou, geramos um ícone base64 para não dar erro no chat
-    # Isso garante que o código do frontend receba um nome de arquivo e não quebre a lógica
-    print("DEBUG: [V7] TODOS OS MOTORES FALHARAM. Usando fallback nuclear.")
     return None
 
 def gerar_video_ai(prompt, user_id):

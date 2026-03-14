@@ -741,102 +741,67 @@ def enviar():
     
     print(f"DEBUG: Resposta Bruta da IA: {resposta_bruta}") # LOG PARA DEBUG
 
-    # TRIGGER DE SEGURANÇA: Se o usuário pediu imagem mas a IA esqueceu o comando
+    # 1. DETECÇÃO DE COMANDO DE IMAGEM (Regex Infalível)
+    # Busca por [GERAR_IMAGEM: descrição] ou GERAR_IMAGEM: descrição
+    match_img = re.search(r'\[?GERAR_IMAGEM:\s*([^\]\n]+)\]?', resposta)
+    
+    # TRIGGER DE SEGURANÇA: Se o usuário pediu imagem mas a IA esqueceu o comando ou o comando veio vazio
     termos_imagem = ["gere uma imagem", "gerar imagem", "crie uma imagem", "criar imagem", "desenhe", "mostre uma imagem", "um retrato de"]
     pediu_imagem_texto = any(termo in texto.lower() for termo in termos_imagem)
     
-    if pediu_imagem_texto and "[GERAR_IMAGEM:" not in resposta and "GERAR_IMAGEM:" not in resposta:
-        print("DEBUG: Trigger de segurança ativado. Adicionando comando de imagem forçado.")
-        prompt_img_fallback = traduzir_prompt(texto)
-        resposta += f"\n\n[GERAR_IMAGEM: {prompt_img_fallback}]"
+    if (pediu_imagem_texto and not match_img) or (match_img and len(match_img.group(1).strip()) < 3):
+        print("DEBUG: Trigger de segurança v16 ativado.")
+        prompt_img = traduzir_prompt(texto)
+        # Remove qualquer rastro de comando mal formado
+        if match_img:
+            resposta = resposta.replace(match_img.group(0), "").strip()
+    elif match_img:
+        prompt_img = match_img.group(1).strip()
+        resposta = resposta.replace(match_img.group(0), "").strip()
+    else:
+        prompt_img = None
 
-    if "[GERAR_IMAGEM:" in resposta or "GERAR_IMAGEM:" in resposta:
+    if prompt_img:
         try:
-            print(f"DEBUG: Comando de imagem detectado na resposta: {resposta}")
-            # Tenta encontrar o comando mesmo se a IA não colocar os colchetes perfeitamente
-            inicio = -1
-            fim = -1
-            
-            if "[GERAR_IMAGEM:" in resposta:
-                idx = resposta.find("[GERAR_IMAGEM:")
-                inicio = idx + 14
-                fim = resposta.find("]", inicio)
-            elif "GERAR_IMAGEM:" in resposta:
-                idx = resposta.find("GERAR_IMAGEM:")
-                inicio = idx + 13
-                # Se não houver ], pega até o fim do parágrafo ou da resposta
-                fim_p = resposta.find("\n", inicio)
-                fim = fim_p if fim_p != -1 else len(resposta)
-            
-            if inicio != -1 and (fim != -1 or fim == len(resposta)):
-                prompt_img = resposta[inicio:fim].strip()
-                print(f"DEBUG: Prompt extraído: '{prompt_img}'")
-                
-                # SE O PROMPT ESTIVER VAZIO, usamos o texto original do usuário como fallback
-                if not prompt_img or len(prompt_img) < 3:
-                    print("DEBUG: Prompt vazio no comando. Usando texto original do usuário.")
-                    prompt_img = texto # 'texto' é a variável que contém a pergunta do usuário
-                
-                # Remove o comando do texto da resposta para o usuário
-                if "[GERAR_IMAGEM:" in resposta:
-                    comando_completo = resposta[resposta.find("[GERAR_IMAGEM:"):fim+1]
-                    resposta = resposta.replace(comando_completo, "").strip()
-                else:
-                    comando_completo = resposta[resposta.find("GERAR_IMAGEM:"):fim]
-                    resposta = resposta.replace(comando_completo, "").strip()
-                
-                # Executa a geração V11 Ultra
-                nome_img = gerar_imagem_ai(prompt_img, current_user.id)
-                
-                if nome_img:
-                    print(f"DEBUG: [V7 SUCCESS] Imagem gerada: {nome_img}")
-                    novo_arquivo = nome_img
-                    tipo_final = "imagem_gerada"
-                    if not resposta: resposta = "Aqui está a imagem que você solicitou:"
-                else:
-                    print("DEBUG: [V7 FAILURE] Falha crítica em todos os motores gráficos.")
-                    resposta += "\n\n⚠️ (Erro ao processar a imagem. O motor gráfico pode estar sobrecarregado ou bloqueado.)"
+            print(f"DEBUG: Processando comando de imagem para: '{prompt_img}'")
+            nome_img = gerar_imagem_ai(prompt_img, current_user.id)
+            if nome_img:
+                novo_arquivo = nome_img
+                tipo_final = "imagem_gerada"
+                if not resposta: resposta = "Aqui está a imagem que você solicitou:"
+            else:
+                resposta += "\n\n⚠️ (Erro ao processar a imagem. O motor gráfico pode estar sobrecarregado.)"
         except Exception as e:
-            print(f"DEBUG: [V7 ERROR] Falha no processamento do comando de imagem: {e}")
-    elif "[GERAR_VIDEO:" in resposta:
-        try:
-            inicio = resposta.find("[GERAR_VIDEO:") + 13
-            fim = resposta.find("]", inicio)
-            prompt_vid = resposta[inicio:fim].strip()
-            resposta = resposta.replace(f"[GERAR_VIDEO:{resposta[inicio:fim]}]", "").strip()
-            nome_vid = gerar_video_ai(prompt_vid, current_user.id)
-            if nome_vid:
-                novo_arquivo = nome_vid
-                tipo_final = "video_gerado"
-        except: pass
-    elif "[EDITAR_IMAGEM:" in resposta:
-        try:
-            inicio = resposta.find("[EDITAR_IMAGEM:") + 15
-            fim = resposta.find("]", inicio)
-            op = resposta[inicio:fim].strip()
-            resposta = resposta.replace(f"[EDITAR_IMAGEM:{resposta[inicio:fim]}]", "").strip()
-            # Procura a última imagem enviada pelo usuário na conversa
-            msg_img = Mensagem.query.filter_by(conversa_id=conv.id, tipo="imagem").order_by(Mensagem.id.desc()).first()
-            if msg_img:
-                caminho_orig = os.path.join(UPLOAD_DIR, msg_img.arquivo_nome)
-                nome_edit = editar_imagem(caminho_orig, op)
-                if nome_edit:
-                    novo_arquivo = nome_edit
-                    tipo_final = "imagem_gerada"
-        except: pass
+            print(f"DEBUG: [V16 ERROR] Falha imagem: {e}")
 
-    # Verificação de solicitação de criação de arquivo
+    # 2. DETECÇÃO DE VÍDEO
+    match_vid = re.search(r'\[GERAR_VIDEO:\s*([^\]]+)\]', resposta)
+    if match_vid:
+        prompt_vid = match_vid.group(1).strip()
+        resposta = resposta.replace(match_vid.group(0), "").strip()
+        nome_vid = gerar_video_ai(prompt_vid, current_user.id)
+        if nome_vid:
+            novo_arquivo = nome_vid
+            tipo_final = "video_gerado"
+
+    # 3. DETECÇÃO DE ARQUIVOS (PDF, TXT, DOCX)
     t_low = texto.lower()
     if not novo_arquivo:
-        if any(x in t_low for x in ["crie um pdf", "gerar pdf", "salve em pdf", "salvar como pdf"]):
+        # Se o usuário pediu explicitamente um arquivo, nós forçamos a criação
+        pediu_arquivo = any(x in t_low for x in ["crie um", "gerar", "salve em", "salvar como", "fazer um"])
+        
+        if pediu_arquivo and ("pdf" in t_low):
             nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.pdf"
             novo_arquivo = criar_pdf(resposta, nome_f)
             tipo_final = "arquivo"
-        elif any(x in t_low for x in ["crie um txt", "gerar txt", "salve em txt", "salvar como txt"]):
+        elif pediu_arquivo and ("txt" in t_low or "texto" in t_low and "arquivo" in t_low):
             nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.txt"
             novo_arquivo = criar_txt(resposta, nome_f)
             tipo_final = "arquivo"
-        elif ("docx" in t_low or "word" in t_low) and ("crie" in t_low or "gerar" in t_low or "salve" in t_low) and HAS_DOCX:
+        elif pediu_arquivo and ("docx" in t_low or "word" in t_low) and HAS_DOCX:
+            nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.docx"
+            novo_arquivo = criar_docx(resposta, nome_f)
+            tipo_final = "arquivo"
             nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.docx"
             novo_arquivo = criar_docx(resposta, nome_f)
             tipo_final = "arquivo"

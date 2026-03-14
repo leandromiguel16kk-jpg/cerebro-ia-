@@ -1,10 +1,54 @@
 :root {
-  --bg:#0f1117; --bg2:#161b27; --bg3:#1e2535; --border:#2a3147;
-  --text:#e8eaf0; --text2:#8892a8;
-  --accent:#4f8ef7; --accent2:#6c63ff;
-  --green:#22c55e; --red:#ef4444; --yellow:#f59e0b;
-  --sidebar:260px; --r:12px; --shadow:0 4px 24px rgba(0,0,0,.3);
+  --bg:#0a0c10; --bg2:#121620; --bg3:#1b212f; --border:rgba(255,255,255,0.08);
+  --text:#f0f2f5; --text2:#94a3b8;
+  --accent:#3b82f6; --accent2:#8b5cf6;
+  --green:#10b981; --red:#ef4444; --yellow:#f59e0b;
+  --sidebar:280px; --r:16px; --shadow:0 10px 30px rgba(0,0,0,0.5);
+  --glass:rgba(255,255,255,0.03);
 }
+
+/* Efeito Glassmorphism para Elementos Premium */
+.glass-effect {
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+}
+
+.msg-balao.ia {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.msg-balao.user {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.sug-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sug-card:hover {
+    background: var(--bg3);
+    border-color: var(--accent);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+/* Scrollbar Moderno */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { 
+    background: var(--border); 
+    border-radius: 20px;
+    border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text2); }
 [data-tema="light"] { --bg:#f0f2f7; --bg2:#fff; --bg3:#e8ecf4; --border:#d1d9e8; --text:#1a2035; --text2:#5a6478; --shadow:0 4px 24px rgba(0,0,0,.1); }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}

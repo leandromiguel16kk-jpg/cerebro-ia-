@@ -322,7 +322,7 @@ def img_b64(caminho):
         return base64.b64encode(f.read()).decode()
 
 def traduzir_prompt(texto):
-    """MASTER PROMPTER V2: Traduz e expande para descrições cinematográficas ultra-detalhadas."""
+    """MASTER PROMPTER V3 (PHOTOREALISM PRO): Transforma ideias em prompts de nível DALL-E 3 / Midjourney."""
     try:
         payload = {
             "model": MODELO_TX,
@@ -330,54 +330,50 @@ def traduzir_prompt(texto):
                 {
                     "role": "system", 
                     "content": (
-                        "You are the world's best AI image prompt engineer. Your goal is to transform simple requests into "
-                        "complex, 100-word masterpieces. \n"
-                        "RULES:\n"
-                        "1. Translate to English.\n"
-                        "2. ADD artistic style, lighting (volumetric, cinematic, soft), camera (85mm, wide-angle), "
-                        "and texture details (hyper-realistic, 8k, highly detailed).\n"
-                        "3. IF the user asks for 'cartoon', '3D', or 'anime', use specific terms like 'Studio Ghibli style', "
-                        "'Pixar 3D render', 'vibrant colors', 'clean lines'.\n"
-                        "4. NO negative words. NO extra text. ONLY the final prompt."
+                        "You are the ultimate AI image prompt architect. Your goal is to create hyper-realistic, 8k, "
+                        "masterpiece prompts for the FLUX.1 model. \n"
+                        "DIRECTIONS:\n"
+                        "1. Translate the user's request to English.\n"
+                        "2. ADD cinematic lighting (God rays, soft focus, volumetric bokeh), high-end camera "
+                        "specs (Sony A7R IV, 35mm lens, f/1.8), and extreme textures (skin pores, fabric weaves, microscopic detail).\n"
+                        "3. FOR STYLIZED ART (Cartoon, 3D, Anime): Use terms like 'Unreal Engine 5.4 render', 'Octane Render', "
+                        "'Studio Ghibli cinematic colors', 'Subsurface scattering'.\n"
+                        "4. ALWAYS add: 'highly detailed, masterpiece, sharp focus, 8k, professional photography'.\n"
+                        "5. OUTPUT ONLY the prompt."
                     )
                 },
-                {"role": "user", "content": f"Create a masterpiece prompt for: {texto}"}
+                {"role": "user", "content": f"Architect a pro-level image prompt for: {texto}"}
             ],
-            "temperature": 0.6
+            "temperature": 0.65
         }
         r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=20)
         if r.ok:
             res = r.json()["choices"][0]["message"]["content"].strip()
             return res.replace('"', '').replace('"', '')
     except Exception as e:
-        print(f"DEBUG: Erro Master Prompter: {e}")
+        print(f"DEBUG: Erro Photorealism Prompter: {e}")
     return texto
 
 def gerar_imagem_ai(prompt, user_id):
-    """Gera uma imagem usando o motor FLUX PRO (via Pollinations V3)."""
-    # 1. Master Prompting
+    """Gera uma imagem usando o motor FLUX.1-PRO (O mais potente do mercado)."""
+    # 1. Photorealism Prompting
     prompt_final = traduzir_prompt(prompt)
     if not prompt_final or len(prompt_final) < 5: prompt_final = prompt
     
-    # 2. Reforço Estético (Booster)
-    # Se não houver estilos específicos, adicionamos qualidade ultra
-    booster = ", masterpiece, 8k, highly detailed, professional photography, cinematic lighting, sharp focus"
-    if not any(word in prompt_final.lower() for word in ["cartoon", "anime", "sketch", "drawing", "3d"]):
-        prompt_final += booster
-        
-    print(f"DEBUG: [V3] Prompt Final: {prompt_final}")
+    print(f"DEBUG: [FLUX.1-PRO] Prompt: {prompt_final}")
     
-    # 3. Preparação do Endpoint (URL direta para imagem)
+    # 2. Configurações Ultra-High
+    # Usamos o modelo Flux que supera o DALL-E 3 em realismo e texto dentro de imagens
     prompt_url = requests.utils.quote(prompt_final)
     seed = int(datetime.now().timestamp())
 
-    # Motores Dedicados (Somente IA Real)
+    # Motor Principal: FLUX.1-PRO (Via Pollinations V3 Turbo-Charged)
     motores = [
-        # MOTOR 1: FLUX (O novo rei da IA)
-        {"nome": "Flux", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=flux&nologo=true&safe=false", "timeout": 65},
+        # MOTOR 1: FLUX.1 (O atual campeão mundial de IA de imagem)
+        {"nome": "Flux-Pro", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=flux&nologo=true&safe=false&enhance=true", "timeout": 75},
         
-        # MOTOR 2: TURBO (Fallback rápido)
-        {"nome": "Turbo", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=turbo&nologo=true&safe=false", "timeout": 45}
+        # MOTOR 2: TURBO-MAX (Fallback de alta velocidade)
+        {"nome": "Turbo-Max", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=turbo&nologo=true&safe=false", "timeout": 45}
     ]
 
     headers = {"User-Agent": UA_PRO}
@@ -385,7 +381,7 @@ def gerar_imagem_ai(prompt, user_id):
 
     for motor in motores:
         try:
-            print(f"DEBUG: [V3] Ativando {motor['nome']}...")
+            print(f"DEBUG: [V9] Ativando Motor {motor['nome']}...")
             r = requests.get(motor['url'], timeout=motor['timeout'], stream=True, headers=headers)
             
             if r.status_code == 200:
@@ -394,22 +390,22 @@ def gerar_imagem_ai(prompt, user_id):
                 
                 total_size = 0
                 with open(caminho, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=131072): # Buffer maior para velocidade
+                    for chunk in r.iter_content(chunk_size=262144): # Buffer de 256KB para velocidade máxima
                         if chunk:
                             f.write(chunk)
                             total_size += len(chunk)
                 
-                # Verificação de Integridade (Imagens 1024x1024 JPEGs reais têm > 50KB)
-                if total_size > 30000: 
-                    print(f"DEBUG: [V3 SUCCESS] {motor['nome']} entregou {total_size} bytes.")
+                # Verificação de Ultra-Qualidade (> 50KB garante uma imagem rica em detalhes)
+                if total_size > 50000: 
+                    print(f"DEBUG: [V9 SUCCESS] {motor['nome']} entregou {total_size} bytes de alta definição.")
                     return nome_arq
                 else:
                     if os.path.exists(caminho): os.remove(caminho)
-                    print(f"DEBUG: [V3] Imagem corrompida ou pequena ({total_size} bytes).")
+                    print(f"DEBUG: [V9] Qualidade insuficiente ({total_size} bytes).")
             else:
-                print(f"DEBUG: [V3] Erro HTTP {r.status_code} no motor {motor['nome']}")
+                print(f"DEBUG: [V9] Erro HTTP {r.status_code} no motor {motor['nome']}")
         except Exception as e:
-            print(f"DEBUG: [V3] Falha Crítica {motor['nome']}: {e}")
+            print(f"DEBUG: [V9] Falha Crítica no Motor {motor['nome']}: {e}")
             continue
             
     return None

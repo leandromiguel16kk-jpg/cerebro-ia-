@@ -354,7 +354,9 @@ def gerar_imagem_ai(prompt, user_id):
             print(f"DEBUG: Tentando motor gráfico: {url}")
             
             r = requests.get(url, timeout=45)
-            if r.ok and len(r.content) > 1000: # Verifica se não é uma imagem de erro pequena
+            # Verifica se é uma imagem real e não uma página de erro
+            ctype = r.headers.get("Content-Type", "").lower()
+            if r.ok and "image" in ctype and len(r.content) > 1000:
                 nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}_{seed % 1000}.jpg"
                 caminho = os.path.join(UPLOAD_DIR, nome_arq)
                 with open(caminho, "wb") as f:
@@ -364,7 +366,7 @@ def gerar_imagem_ai(prompt, user_id):
                     print(f"DEBUG: Sucesso no motor: {url}")
                     return nome_arq
             else:
-                print(f"DEBUG: Motor falhou ou retornou imagem inválida. Tentando próximo...")
+                print(f"DEBUG: Motor falhou (C-Type: {ctype}). Tentando próximo...")
         except Exception as e:
             print(f"DEBUG: Erro na tentativa do motor: {e}")
             continue
@@ -730,6 +732,9 @@ def enviar():
                     print(f"DEBUG: Imagem gerada com sucesso: {nome_img}")
                     novo_arquivo = nome_img
                     tipo_final = "imagem_gerada"
+                    # Garante que a resposta não seja vazia se houver imagem
+                    if not resposta:
+                        resposta = "Aqui está a imagem que você solicitou:"
                 else:
                     print("DEBUG: Falha ao gerar imagem na função gerar_imagem_ai")
                     resposta += "\n\n⚠️ (Erro ao processar a imagem. O motor gráfico pode estar sobrecarregado.)"
@@ -799,14 +804,9 @@ def download_arquivo(filename):
     # O nome do arquivo agora contém o ID do usuário (ex: img_1_... ou 1_foto.jpg)
     user_id_str = str(current_user.id)
     
-    # Verificação de segurança mais precisa: o ID deve estar cercado por delimitadores ou ser o prefixo
-    is_owner = (
-        filename.startswith(f"{user_id_str}_") or 
-        filename.startswith(f"img_{user_id_str}_") or 
-        filename.startswith(f"vid_{user_id_str}_") or 
-        filename.startswith(f"edit_img_{user_id_str}_") or
-        f"_{user_id_str}_" in filename
-    )
+    # Verificação de segurança simplificada e mais robusta
+    # Aceita se o ID do usuário estiver em qualquer lugar do nome do arquivo
+    is_owner = f"_{user_id_str}_" in filename or filename.startswith(f"{user_id_str}_")
 
     if not is_owner:
         print(f"DEBUG: ACESSO NEGADO para {filename}")
@@ -815,7 +815,8 @@ def download_arquivo(filename):
     caminho_completo = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(caminho_completo):
         print(f"DEBUG: ARQUIVO NÃO ENCONTRADO no disco: {caminho_completo}")
-        return jsonify({"erro": "Arquivo não encontrado no servidor"}), 404
+        # Se não encontrar no disco mas for uma imagem, talvez o Railway tenha limpado
+        return jsonify({"erro": "Arquivo expirado ou não encontrado no servidor"}), 404
         
     # Define se deve baixar ou apenas exibir
     baixar = request.args.get("download") == "1"

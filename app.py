@@ -354,25 +354,25 @@ def traduzir_prompt(texto):
     return texto
 
 def gerar_imagem_ai(prompt, user_id):
-    """Gera uma imagem usando o motor FLUX.1-PRO (O mais potente do mercado)."""
+    """Gera uma imagem usando o motor FLUX.1 (O mais potente e estável)."""
     # 1. Photorealism Prompting
     prompt_final = traduzir_prompt(prompt)
     if not prompt_final or len(prompt_final) < 5: prompt_final = prompt
     
-    print(f"DEBUG: [FLUX.1-PRO] Prompt: {prompt_final}")
-    
-    # 2. Configurações Ultra-High
-    # Usamos o modelo Flux que supera o DALL-E 3 em realismo e texto dentro de imagens
-    prompt_url = requests.utils.quote(prompt_final)
+    # 2. Limpeza profunda do prompt para a URL (Removendo caracteres problemáticos)
+    # Alguns caracteres como #, ?, & podem quebrar a requisição se não forem tratados
+    prompt_limpo = re.sub(r'[^\w\s,.!-]', '', prompt_final)
+    prompt_url = requests.utils.quote(prompt_limpo)
     seed = int(datetime.now().timestamp())
 
-    # Motor Principal: FLUX.1-PRO (Via Pollinations V3 Turbo-Charged)
+    # 3. Motores com URLs Simplificadas e Estáveis
+    # Removido 'safe=false' e 'enhance=true' para evitar bloqueios de firewall/WAF
     motores = [
-        # MOTOR 1: FLUX.1 (O atual campeão mundial de IA de imagem)
-        {"nome": "Flux-Pro", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=flux&nologo=true&safe=false&enhance=true", "timeout": 75},
+        # MOTOR 1: FLUX (O novo padrão ouro)
+        {"nome": "Flux-Pro", "url": f"https://pollinations.ai/p/{prompt_url}?width=1024&height=1024&seed={seed}&model=flux", "timeout": 60},
         
-        # MOTOR 2: TURBO-MAX (Fallback de alta velocidade)
-        {"nome": "Turbo-Max", "url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&seed={seed}&model=turbo&nologo=true&safe=false", "timeout": 45}
+        # MOTOR 2: TURBO (Fallback ultra-estável)
+        {"nome": "Turbo-Max", "url": f"https://pollinations.ai/p/{prompt_url}?width=1024&height=1024&seed={seed}&model=turbo", "timeout": 40}
     ]
 
     headers = {"User-Agent": UA_PRO}
@@ -380,7 +380,8 @@ def gerar_imagem_ai(prompt, user_id):
 
     for motor in motores:
         try:
-            print(f"DEBUG: [V9] Ativando Motor {motor['nome']}...")
+            print(f"DEBUG: [V11] Tentando Motor {motor['nome']}...")
+            # Usamos params={} vazio pois os parâmetros já estão na URL construída
             r = requests.get(motor['url'], timeout=motor['timeout'], stream=True, headers=headers)
             
             if r.status_code == 200:
@@ -389,22 +390,22 @@ def gerar_imagem_ai(prompt, user_id):
                 
                 total_size = 0
                 with open(caminho, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=262144): # Buffer de 256KB para velocidade máxima
+                    for chunk in r.iter_content(chunk_size=131072):
                         if chunk:
                             f.write(chunk)
                             total_size += len(chunk)
                 
-                # Verificação de Ultra-Qualidade (> 50KB garante uma imagem rica em detalhes)
-                if total_size > 50000: 
-                    print(f"DEBUG: [V9 SUCCESS] {motor['nome']} entregou {total_size} bytes de alta definição.")
+                # Verificação de Tamanho (Imagens reais de IA têm > 10KB)
+                if total_size > 10000: 
+                    print(f"DEBUG: [V11 SUCCESS] {motor['nome']} gerou {total_size} bytes.")
                     return nome_arq
                 else:
                     if os.path.exists(caminho): os.remove(caminho)
-                    print(f"DEBUG: [V9] Qualidade insuficiente ({total_size} bytes).")
+                    print(f"DEBUG: [V11] Resposta inválida ({total_size} bytes).")
             else:
-                print(f"DEBUG: [V9] Erro HTTP {r.status_code} no motor {motor['nome']}")
+                print(f"DEBUG: [V11] Erro HTTP {r.status_code} no motor {motor['nome']}")
         except Exception as e:
-            print(f"DEBUG: [V9] Falha Crítica no Motor {motor['nome']}: {e}")
+            print(f"DEBUG: [V11] Erro no motor {motor['nome']}: {e}")
             continue
             
     return None

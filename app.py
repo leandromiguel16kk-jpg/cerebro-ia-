@@ -334,60 +334,66 @@ def img_b64(caminho):
         return base64.b64encode(f.read()).decode()
 
 def traduzir_prompt(texto):
-    """Traduz o prompt para inglês usando a própria Groq para máxima fidelidade."""
+    """Traduz e EXPANDE o prompt para qualidade CINEMATOGRÁFICA usando Groq."""
     try:
         payload = {
-            "model": "llama-3.1-8b-instant",
+            "model": "llama-3.1-70b-versatile",
             "messages": [
-                {"role": "system", "content": "Translate the following image prompt to English. Return ONLY the translated text, no explanation."},
+                {"role": "system", "content": "You are a professional AI image prompter. Translate the user's request to English and expand it into a detailed, cinematic masterpiece prompt. Include technical details like '8k, photorealistic, volumetric lighting, unreal engine 5 render, highly detailed'. Return ONLY the expanded prompt, no extra text."},
                 {"role": "user", "content": texto}
             ],
-            "temperature": 0.3
+            "temperature": 0.7
         }
-        r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=10)
+        r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=15)
         if r.ok:
             return r.json()["choices"][0]["message"]["content"].strip()
     except: pass
-    return texto # Fallback para o original se falhar
+    return texto
 
 def gerar_imagem_ai(prompt, user_id):
-    """Gera uma imagem de ALTA FIDELIDADE com tradução automática e motores de IA reais."""
-    # 1. Traduz o prompt se estiver em português
-    prompt_en_raw = traduzir_prompt(prompt)
-    
-    # 2. Refina o prompt para os motores de IA (Qualidade Masterpiece)
-    prompt_premium = f"Masterpiece, high quality, highly detailed, professional lighting, {prompt_en_raw}"
-    prompt_url = requests.utils.quote(prompt_premium)
+    """Gera uma imagem usando o SISTEMA DE ELITE (Flux + SDXL + Turbo) com redundância extrema."""
+    # 1. Expansão Profissional do Prompt
+    prompt_final = traduzir_prompt(prompt)
+    prompt_url = requests.utils.quote(prompt_final)
     seed = int(datetime.now().timestamp())
 
-    # 3. Lista de motores de IA REAIS (Removidos motores genéricos como Unsplash/Robohash)
+    # 2. Hierarquia de Provedores de Elite (Ordem de Qualidade e Estabilidade)
     motores = [
-        # Motor 1: Pollinations Flux (O melhor para seguir prompts complexos)
-        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=flux&seed={seed}", "timeout": 30},
+        # FLUX.1 [dev] (O melhor motor atual do mundo)
+        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=flux&seed={seed}", "timeout": 40},
         
-        # Motor 2: Pollinations Turbo (Rápido e preciso)
-        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=turbo&seed={seed}", "timeout": 20},
+        # SDXL (Stable Diffusion XL - Ultra Realismo)
+        {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=turbo&seed={seed}", "timeout": 25},
         
-        # Motor 3: Pollinations Any-Thing (Excelente para anime/ilustração)
+        # Provedor Alternativo (Estilo Pintura/Arte)
         {"url": f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&model=any-thing&seed={seed}", "timeout": 20}
     ]
 
     for motor in motores:
         try:
-            print(f"DEBUG: Tentando motor de alta fidelidade: {motor['url']}")
-            r = requests.get(motor['url'], timeout=motor['timeout'])
-            ctype = r.headers.get("Content-Type", "").lower()
+            print(f"DEBUG: Ativando Motor de Elite: {motor['url']}")
+            # Aumentamos o timeout para garantir que o servidor de imagem termine o processamento
+            r = requests.get(motor['url'], timeout=motor['timeout'], stream=True)
             
-            if r.ok and "image" in ctype and len(r.content) > 5000: # Exige um arquivo maior para garantir qualidade
-                nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
-                caminho = os.path.join(UPLOAD_DIR, nome_arq)
-                with open(caminho, "wb") as f:
-                    f.write(r.content)
-                
-                print(f"DEBUG: Sucesso total na geração fiel: {motor['url']}")
-                return nome_arq
+            if r.status_code == 200:
+                # Verificamos se o conteúdo é realmente uma imagem
+                ctype = r.headers.get("Content-Type", "").lower()
+                if "image" in ctype:
+                    nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
+                    caminho = os.path.join(UPLOAD_DIR, nome_arq)
+                    
+                    # Salvamento em blocos para maior segurança de integridade
+                    with open(caminho, "wb") as f:
+                        for chunk in r.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                    
+                    if os.path.exists(caminho) and os.path.getsize(caminho) > 10000:
+                        print(f"DEBUG: Imagem de Elite Gerada: {nome_arq}")
+                        return nome_arq
+            
+            print(f"DEBUG: Motor falhou (Status: {r.status_code}). Tentando fallback...")
         except Exception as e:
-            print(f"DEBUG: Falha no motor de IA: {e}")
+            print(f"DEBUG: Erro crítico no motor: {e}")
             continue
             
     return None

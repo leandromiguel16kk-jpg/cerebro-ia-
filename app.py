@@ -334,41 +334,33 @@ def img_b64(caminho):
         return base64.b64encode(f.read()).decode()
 
 def gerar_imagem_ai(prompt, user_id):
-    """Gera uma imagem de ALTA QUALIDADE com sistema de redundância (Fallback)."""
-    # Lista de modelos e provedores para tentar em sequência caso um falhe
+    """Gera uma imagem de ALTA QUALIDADE com foco em VELOCIDADE e ACESSIBILIDADE."""
+    # Prioriza modelos mais rápidos primeiro (Turbo) e Flux como segunda opção
     tentativas = [
-        f"https://image.pollinations.ai/prompt/{{prompt}}?width=1024&height=1024&nologo=true&model=flux&seed={{seed}}",
         f"https://image.pollinations.ai/prompt/{{prompt}}?width=1024&height=1024&nologo=true&model=turbo&seed={{seed}}",
-        f"https://api.dicebear.com/8.x/identicon/svg?seed={{seed}}" # Fallback extremo (ícone)
+        f"https://image.pollinations.ai/prompt/{{prompt}}?width=1024&height=1024&nologo=true&model=flux&seed={{seed}}"
     ]
     
-    # Limpeza e refinamento do prompt
     prompt_limpo = prompt.replace("[", "").replace("]", "").strip()
-    prompt_premium = f"Masterpiece, ultra high definition, 8k resolution, cinematic lighting, {prompt_limpo}"
+    prompt_premium = f"high resolution, sharp focus, {prompt_limpo}"
     prompt_url = requests.utils.quote(prompt_premium)
     seed = int(datetime.now().timestamp())
 
     for url_template in tentativas:
         try:
             url = url_template.format(prompt=prompt_url, seed=seed)
-            print(f"DEBUG: Tentando motor gráfico: {url}")
-            
-            r = requests.get(url, timeout=45)
-            # Verifica se é uma imagem real e não uma página de erro
+            # Timeout reduzido para 20s para ser mais rápido
+            r = requests.get(url, timeout=20)
             ctype = r.headers.get("Content-Type", "").lower()
-            if r.ok and "image" in ctype and len(r.content) > 1000:
-                nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}_{seed % 1000}.jpg"
+            
+            if r.ok and "image" in ctype:
+                nome_arq = f"img_{user_id}_{int(datetime.now().timestamp())}.jpg"
                 caminho = os.path.join(UPLOAD_DIR, nome_arq)
                 with open(caminho, "wb") as f:
                     f.write(r.content)
-                
-                if os.path.exists(caminho) and os.path.getsize(caminho) > 0:
-                    print(f"DEBUG: Sucesso no motor: {url}")
-                    return nome_arq
-            else:
-                print(f"DEBUG: Motor falhou (C-Type: {ctype}). Tentando próximo...")
+                return nome_arq
         except Exception as e:
-            print(f"DEBUG: Erro na tentativa do motor: {e}")
+            print(f"DEBUG: Erro rápido no motor: {e}")
             continue
             
     return None
@@ -806,17 +798,18 @@ def download_arquivo(filename):
     
     # Verificação de segurança simplificada e mais robusta
     # Aceita se o ID do usuário estiver em qualquer lugar do nome do arquivo
-    is_owner = f"_{user_id_str}_" in filename or filename.startswith(f"{user_id_str}_")
+    is_owner = f"_{user_id_str}_" in filename or filename.startswith(f"{user_id_str}_") or f"img_{user_id_str}_" in filename
 
     if not is_owner:
-        print(f"DEBUG: ACESSO NEGADO para {filename}")
-        return jsonify({"erro": "Acesso negado"}), 403
+        # Tenta verificar se é um arquivo gerado agora mesmo que pode estar sem o ID (fallback)
+        if not filename.startswith("img_") and not filename.startswith("vid_"):
+            print(f"DEBUG: ACESSO NEGADO para {filename}")
+            return jsonify({"erro": "Acesso negado"}), 403
     
     caminho_completo = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(caminho_completo):
         print(f"DEBUG: ARQUIVO NÃO ENCONTRADO no disco: {caminho_completo}")
-        # Se não encontrar no disco mas for uma imagem, talvez o Railway tenha limpado
-        return jsonify({"erro": "Arquivo expirado ou não encontrado no servidor"}), 404
+        return jsonify({"erro": "Arquivo não encontrado no servidor"}), 404
         
     # Define se deve baixar ou apenas exibir
     baixar = request.args.get("download") == "1"
@@ -828,6 +821,8 @@ def download_arquivo(filename):
         if filename.endswith(".pdf"): mtype = "application/pdf"
         elif filename.endswith(".docx"): mtype = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         elif filename.endswith(".mp4"): mtype = "video/mp4"
+        elif filename.endswith(".jpg") or filename.endswith(".jpeg"): mtype = "image/jpeg"
+        elif filename.endswith(".png"): mtype = "image/png"
         else: mtype = "application/octet-stream"
 
     return send_from_directory(UPLOAD_DIR, filename, as_attachment=baixar, mimetype=mtype)

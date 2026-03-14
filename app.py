@@ -334,33 +334,41 @@ def img_b64(caminho):
         return base64.b64encode(f.read()).decode()
 
 def gerar_imagem_ai(prompt):
-    """Gera uma imagem de ALTA QUALIDADE usando Pollinations.ai."""
-    try:
-        # Refinamento de prompt para ultra qualidade
-        prompt_premium = f"Masterpiece, ultra high definition, 8k resolution, highly detailed, professional lighting, cinematic, {prompt}"
-        prompt_url = requests.utils.quote(prompt_premium)
-        seed = int(datetime.now().timestamp())
-        # URL robusta com seed e modelo flux
-        url = f"https://image.pollinations.ai/prompt/{prompt_url}?width=1024&height=1024&nologo=true&seed={seed}&model=flux"
-        
-        print(f"DEBUG: Solicitando imagem para: {url}")
-        
-        r = requests.get(url, timeout=40)
-        if r.ok:
-            nome_arq = f"img_{int(datetime.now().timestamp())}.jpg"
-            caminho = os.path.join(UPLOAD_DIR, nome_arq)
-            with open(caminho, "wb") as f:
-                f.write(r.content)
+    """Gera uma imagem de ALTA QUALIDADE com sistema de redundância (Fallback)."""
+    # Lista de modelos e provedores para tentar em sequência caso um falhe
+    tentativas = [
+        f"https://image.pollinations.ai/prompt/{{prompt}}?width=1024&height=1024&nologo=true&model=flux&seed={{seed}}",
+        f"https://image.pollinations.ai/prompt/{{prompt}}?width=1024&height=1024&nologo=true&model=turbo&seed={{seed}}",
+        f"https://api.dicebear.com/8.x/identicon/svg?seed={{seed}}" # Fallback extremo (ícone)
+    ]
+    
+    # Limpeza e refinamento do prompt
+    prompt_limpo = prompt.replace("[", "").replace("]", "").strip()
+    prompt_premium = f"Masterpiece, ultra high definition, 8k resolution, cinematic lighting, {prompt_limpo}"
+    prompt_url = requests.utils.quote(prompt_premium)
+    seed = int(datetime.now().timestamp())
+
+    for url_template in tentativas:
+        try:
+            url = url_template.format(prompt=prompt_url, seed=seed)
+            print(f"DEBUG: Tentando motor gráfico: {url}")
             
-            # Verifica se o arquivo foi realmente escrito e tem tamanho
-            if os.path.exists(caminho) and os.path.getsize(caminho) > 0:
-                return nome_arq
+            r = requests.get(url, timeout=45)
+            if r.ok and len(r.content) > 1000: # Verifica se não é uma imagem de erro pequena
+                nome_arq = f"img_{int(datetime.now().timestamp())}_{seed % 1000}.jpg"
+                caminho = os.path.join(UPLOAD_DIR, nome_arq)
+                with open(caminho, "wb") as f:
+                    f.write(r.content)
+                
+                if os.path.exists(caminho) and os.path.getsize(caminho) > 0:
+                    print(f"DEBUG: Sucesso no motor: {url}")
+                    return nome_arq
             else:
-                print(f"DEBUG: Arquivo salvo está vazio ou não existe: {caminho}")
-        else:
-            print(f"DEBUG: Resposta da API Pollinations não foi OK: {r.status_code}")
-    except Exception as e:
-        print(f"Erro Gerar Imagem: {e}")
+                print(f"DEBUG: Motor falhou ou retornou imagem inválida. Tentando próximo...")
+        except Exception as e:
+            print(f"DEBUG: Erro na tentativa do motor: {e}")
+            continue
+            
     return None
 
 def gerar_video_ai(prompt):

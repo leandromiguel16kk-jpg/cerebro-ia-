@@ -6,6 +6,14 @@ let reconhecendo = false;
 let reconhecimento = null;
 let ctxId = null, ctxFixada = false;
 
+// Menu Mobile
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (sidebar) sidebar.classList.toggle('active');
+  if (overlay) overlay.classList.toggle('active');
+}
+
 // ── INIT ──
 window.onload = () => {
   const msgs = document.getElementById('chatMsgs');

@@ -163,9 +163,69 @@ input,textarea,select{font-family:inherit}
 .sb-logout{color:var(--red) !important}
 
 /* CHAT MAIN */
-.chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.chat-topbar{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.chat-topbar{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;justify-content:space-between;align-items:center;gap:12px;z-index:100}
 .chat-titulo{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+
+/* Hamburger Menu */
+.btn-menu-mobile {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 24px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+@media (max-width: 768px) {
+    :root { --sidebar: 280px; }
+    
+    .hero { grid-template-columns: 1fr; padding: 40px 20px; text-align: center; }
+    .hero h1 { font-size: 36px; }
+    .hero-btns { justify-content: center; }
+    
+    .nav-top { padding: 15px 20px; }
+    .nav-links { display: none; }
+    
+    .app-layout { position: relative; }
+    
+    .sidebar {
+        position: absolute;
+        left: calc(-1 * var(--sidebar));
+        top: 0;
+        bottom: 0;
+        z-index: 1000;
+        transition: 0.3s ease;
+        box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+    }
+    
+    .sidebar.active {
+        left: 0;
+    }
+    
+    .btn-menu-mobile {
+        display: block;
+    }
+    
+    .main-content { padding: 20px; }
+    
+    .msg-balao { max-width: 85%; }
+    
+    .chat-topbar { padding: 10px 15px; }
+    
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 999;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+}
 .topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .topbar-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:.2s}
 .topbar-btn:hover{border-color:var(--accent)}

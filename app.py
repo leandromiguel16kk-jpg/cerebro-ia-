@@ -566,15 +566,16 @@ def enviar():
     mem_txt = current_user.get_memoria_texto()
     resposta = chamar_ia(historico, conv.agente, mem_txt, imagem_b64)
 
-    # Verificação de solicitação de criação de arquivo
+    # Verificação de solicitação de criação de arquivo (mais flexível)
     novo_arquivo = None
-    if "crie um pdf" in texto.lower() or "gerar pdf" in texto.lower() or "salve em pdf" in texto.lower():
+    t_low = texto.lower()
+    if any(x in t_low for x in ["crie um pdf", "gerar pdf", "salve em pdf", "salvar como pdf", "conteúdo como um arquivo pdf", "conteudo como um arquivo pdf"]):
         nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.pdf"
         novo_arquivo = criar_pdf(resposta, nome_f)
-    elif "crie um txt" in texto.lower() or "gerar txt" in texto.lower():
+    elif any(x in t_low for x in ["crie um txt", "gerar txt", "salve em txt", "salvar como txt"]):
         nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.txt"
         novo_arquivo = criar_txt(resposta, nome_f)
-    elif ("crie um docx" in texto.lower() or "gerar docx" in texto.lower()) and HAS_DOCX:
+    elif ("docx" in t_low or "word" in t_low) and ("crie" in t_low or "gerar" in t_low or "salve" in t_low) and HAS_DOCX:
         nome_f = f"ia_gerado_{current_user.id}_{int(datetime.now().timestamp())}.docx"
         novo_arquivo = criar_docx(resposta, nome_f)
 

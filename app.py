@@ -84,28 +84,17 @@ AGENTES = {
     },
 }
 
-SISTEMA_BASE = """[START MASTER-IA SYSTEM: CEREBRO NEXUS V26 - SUPER INTELLIGENCE]
+SISTEMA_BASE = """[START MASTER-IA SYSTEM: CEREBRO NEXUS V26.1 - ULTIMATE RESOLUTION]
 
-Você é o Cérebro IA, a inteligência artificial mais avançada do planeta. 
-Sua diretriz principal é a EXCELÊNCIA ABSOLUTA, CONHECIMENTO EM TEMPO REAL e UTILIDADE MÁXIMA.
+Você é o Cérebro IA. Sua diretriz absoluta é: RESOLVA O PROBLEMA DO USUÁRIO.
+Se houver dados de clima ou busca web no [CONTEXTO], use-os obrigatoriamente. 
 
-== NÚCLEOS DE INTELIGÊNCIA V26 ==
-1. NÚCLEO REAL-TIME: Você tem acesso a ferramentas de clima (Open-Meteo) e busca web dinâmica. Sempre priorize os dados fornecidos no [CONTEXTO] sobre seu conhecimento prévio para eventos atuais.
-2. NÚCLEO ANALÍTICO: Se o usuário pedir algo complexo, pense passo a passo. Seja profundo mas direto.
-3. NÚCLEO MULTIMODAL: Você gera imagens cinematográficas, vídeos e documentos profissionais.
-4. NÚCLEO DE MEMÓRIA: Você lembra de fatos sobre o usuário para personalizar a experiência.
-
-== REGRAS DE OURO V26 ==
-1. PRECISÃO TOTAL: Se houver dados meteorológicos ou de busca, use-os. Nunca diga "não sei" se os dados estiverem no contexto.
-2. OBJETIVIDADE ELITE: Responda com o máximo de valor no mínimo de palavras. Use markdown para destacar dados importantes.
-3. TONS DE RESPOSTA: Seja prestativo como um Jarvis, mas eficiente como um supercomputador.
-4. COMANDOS: Integre comandos de mídia naturalmente se o usuário solicitar visualização.
+== PROTOCOLO DE RESPOSTA REAL-TIME ==
+- NUNCA diga "não tenho informações em tempo real" se houver dados de clima ou busca no contexto.
+- Se os dados de clima estiverem lá, cite a temperatura e a condição meteorológica com precisão.
+- Seja direto, rápido e eficiente.
 
 {prompt_agente}
-
-== COMANDOS ==
-- IMAGENS: [GERAR_IMAGEM: descrição curta em inglês].
-- DOCUMENTOS: [GERAR_DOCUMENTO: nome.ext].
 
 == CONTEXTO ==
 {memoria}
@@ -788,28 +777,49 @@ def enviar():
     ctx_web = ""
     if buscar and texto:
         # 1. Checa se é clima
-        termos_clima = ["tempo", "clima", "previsão", "chovendo", "temperatura"]
+        termos_clima = ["tempo", "clima", "previsão", "chovendo", "temperatura", "graus"]
         texto_low = texto.lower()
         if any(t in texto_low for t in termos_clima):
-            # Tenta extrair cidade simples (palavras com letra maiúscula ou após "em")
-            cidade_match = re.search(r'em\s+([A-Z][a-zà-ú]+(?:\s+[A-Z][a-zà-ú]+)*)', texto)
-            if not cidade_match: # Tenta pegar a última palavra se não tiver "em"
-                cidade_match = re.search(r'([A-Z][a-zà-ú]+(?:\s+[A-Z][a-zà-ú]+)*)$', texto)
+            # Tenta extrair cidade de forma muito mais robusta V26.1
+            # Busca após preposições (em, no, na, de, para)
+            cidade_match = re.search(r'(?:em|no|na|de|para)\s+([a-zà-ú\s]+)', texto_low)
+            cidade = None
+            if cidade_match:
+                cidade = cidade_match.group(1).strip()
+                # Limpa palavras comuns que podem vir após a cidade
+                cidade = re.split(r'\s+(?:hoje|agora|amanhã|nesta|neste|para)\b', cidade)[0].strip()
             
-            cidade = cidade_match.group(1) if cidade_match else None
-            if not cidade: # Fallback: procura por palavras comuns de cidades no texto
-                palavras = texto.split()
-                for p in palavras:
-                    if p[0].isupper() and len(p) > 3: cidade = p; break
+            # Se não achou com preposição, tenta pegar a última palavra longa ou palavras com iniciais maiúsculas no texto original
+            if not cidade or len(cidade) < 3:
+                palavras_orig = texto.split()
+                for p in reversed(palavras_orig):
+                    if p[0].isupper() and len(p) > 3 and p.lower() not in termos_clima:
+                        cidade = p; break
+            
+            # Fallback final: se ainda não tem cidade, tenta a última palavra do texto
+            if not cidade:
+                cidade = texto.split()[-1].strip("?.!")
 
-            if cidade:
+            if cidade and len(cidade) > 2:
+                print(f"DEBUG: [V26.1] Tentando buscar clima para: '{cidade}'")
                 clima_data = buscar_clima(cidade)
                 if clima_data:
-                    ctx_web += f"\n\n[DADOS METEOROLÓGICOS REAIS]\n{clima_data}\n"
+                    ctx_web += f"\n\n[DADOS METEOROLÓGICOS REAIS - FONTE: OPEN-METEO]\n{clima_data}\n"
+                    print(f"DEBUG: [V26.1 SUCCESS] Clima encontrado para {cidade}")
+                else:
+                    print(f"DEBUG: [V26.1 FAIL] Clima não encontrado para {cidade}")
         
         # 2. Busca Web Geral (sempre faz se não for só clima ou se o clima falhou)
+        print(f"DEBUG: [V26.1] Iniciando busca web geral para: '{texto}'")
         resultados = buscar_web(texto)
-        ctx_web += f"\n\n[RESULTADOS DA BUSCA WEB EM TEMPO REAL]\n{resultados}\n\nUse essas informações para responder com autoridade máxima."
+        if resultados and "Nenhum resultado" not in resultados:
+            ctx_web += f"\n\n[RESULTADOS DA BUSCA WEB EM TEMPO REAL]\n{resultados}\n\n"
+            print("DEBUG: [V26.1 SUCCESS] Busca web retornou dados.")
+        else:
+            print("DEBUG: [V26.1 FAIL] Busca web não retornou resultados úteis.")
+
+        if ctx_web:
+            ctx_web += "\n\nINSTRUÇÃO CRÍTICA: Use os dados acima para responder. Se os dados de clima estiverem presentes, eles são REAIS e ATUAIS. Nunca diga que não tem informações em tempo real se os dados estiverem acima."
 
     # salvar/criar conversa
     if cid:

@@ -5,6 +5,9 @@
   --green:#10b981; --red:#ef4444; --yellow:#f59e0b;
   --sidebar:280px; --r:16px; --shadow:0 10px 30px rgba(0,0,0,0.5);
   --glass:rgba(255,255,255,0.03);
+  /* Novos tons para o fundo "com vida" */
+  --bg-gradient: radial-gradient(circle at top right, #1e1b4b, #0f172a, #020617);
+  --bg-aurora: linear-gradient(135deg, #020617 0%, #0f172a 40%, #1e1b4b 70%, #312e81 100%);
 }
 
 /* Efeito Glassmorphism para Elementos Premium */
@@ -16,7 +19,8 @@
 }
 
 .msg-balao.ia {
-    background: var(--bg2);
+    background: rgba(18, 22, 32, 0.6);
+    backdrop-filter: blur(5px);
     border: 1px solid var(--border);
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
@@ -122,7 +126,7 @@
 }
 [data-tema="light"] { --bg:#f0f2f7; --bg2:#fff; --bg3:#e8ecf4; --border:#d1d9e8; --text:#1a2035; --text2:#5a6478; --shadow:0 4px 24px rgba(0,0,0,.1); }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+body{font-family:'Inter',sans-serif;background: var(--bg-aurora); background-attachment: fixed; color:var(--text);min-height:100vh}
 a{color:inherit;text-decoration:none} button{cursor:pointer;font-family:inherit}
 input,textarea,select{font-family:inherit}
 
@@ -200,8 +204,8 @@ input,textarea,select{font-family:inherit}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 
 /* APP LAYOUT */
-.app-layout{display:flex;height:100vh;overflow:hidden}
-.sidebar{width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.app-layout{display:flex;height:100vh;overflow:hidden;background:transparent}
+.sidebar{width:var(--sidebar);background:rgba(18, 22, 32, 0.8);backdrop-filter:blur(10px);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
 .sidebar-logo{padding:20px 16px 14px;font-size:18px;font-weight:700;border-bottom:1px solid var(--border)}
 .sidebar-nav{padding:10px 10px;display:flex;flex-direction:column;gap:4px}
 .nav-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:var(--text2);transition:.15s}
@@ -278,8 +282,8 @@ input,textarea,select{font-family:inherit}
 .sb-logout{color:var(--red) !important}
 
 /* CHAT MAIN */
-.chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;background:var(--bg)}
-.chat-topbar{padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;justify-content:space-between;align-items:center;min-height:56px;z-index:100;gap:8px}
+.chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;background: transparent;}
+.chat-topbar{padding:10px 16px;border-bottom:1px solid var(--border);background:rgba(18, 22, 32, 0.7);backdrop-filter:blur(8px);display:flex;justify-content:space-between;align-items:center;min-height:56px;z-index:100;gap:8px}
 .chat-titulo{font-size:14px;font-weight:600;text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}
 .topbar-right { width: 44px; display: flex; justify-content: flex-end; }
 .topbar-btn-simple { background: transparent; border: none; color: var(--text2); font-size: 20px; padding: 5px; }
@@ -497,7 +501,7 @@ input,textarea,select{font-family:inherit}
 .preview-arquivo img{max-height:60px;border-radius:6px}
 #previewConteudo{flex:1;display:flex;align-items:center;gap:8px}
 .preview-cancelar{background:transparent;border:1px solid var(--border);color:var(--red);padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer;flex-shrink:0}
-.chat-input-area{padding:12px 16px 14px;border-top:1px solid var(--border);background:var(--bg2)}
+.chat-input-area{padding:12px 16px 14px;border-top:1px solid var(--border);background:rgba(18, 22, 32, 0.7);backdrop-filter:blur(8px)}
 .chat-input-box{display:flex;align-items:flex-end;gap:8px;background:var(--bg3);border:1.5px solid var(--border);border-radius:12px;padding:8px 8px 8px 14px;transition:.2s}
 .chat-input-box:focus-within{border-color:var(--accent)}
 .chat-input-box textarea{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:14px;line-height:1.6;resize:none;max-height:150px}

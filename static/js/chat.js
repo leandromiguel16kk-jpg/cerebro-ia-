@@ -125,10 +125,20 @@ async function enviarMensagem() {
   const typing = adicionarTyping();
   document.getElementById('btnEnviar').disabled = true;
 
+  // Lógica de detecção de busca web automática baseada em palavras-chave
+  const palavrasBusca = ['tempo', 'previsão', 'clima', 'jogo', 'placar', 'resultado', 'hoje', 'agora', 'notícia', 'quem ganhou', 'brasileirão', 'futebol', 'basquete', 'vôlei', 'esporte', 'quem é', 'onde fica'];
+  const precisaBuscar = palavrasBusca.some(p => texto.toLowerCase().includes(p));
+
   const fd = new FormData();
   if (texto) fd.append('texto', texto);
   if (conversaId) fd.append('conversa_id', conversaId);
   if (arquivoSelecionado) fd.append('arquivo', arquivoSelecionado.file);
+  if (precisaBuscar) fd.append('buscar_web', '1');
+  
+  // Captura o agente ativo
+  const agenteAtivo = document.querySelector('.agente-item.ativo')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'geral';
+  fd.append('agente', agenteAtivo);
+
   cancelarArquivo();
 
   try {

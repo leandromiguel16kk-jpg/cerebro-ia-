@@ -125,9 +125,9 @@ async function enviarMensagem() {
   const typing = adicionarTyping();
   document.getElementById('btnEnviar').disabled = true;
 
-  // Lógica de detecção de busca web automática baseada em palavras-chave
-  const palavrasBusca = ['tempo', 'previsão', 'clima', 'jogo', 'placar', 'resultado', 'hoje', 'agora', 'notícia', 'quem ganhou', 'brasileirão', 'futebol', 'basquete', 'vôlei', 'esporte', 'quem é', 'onde fica'];
-  const precisaBuscar = palavrasBusca.some(p => texto.toLowerCase().includes(p));
+  // Lógica de detecção de busca web automática V26
+  const palavrasBusca = ['tempo', 'previsão', 'clima', 'chover', 'sol', 'temperatura', 'jogo', 'placar', 'resultado', 'brasileirão', 'futebol', 'basquete', 'vôlei', 'esporte', 'notícia', 'agora', 'hoje', 'quem é', 'quem foi', 'quem ganhou', 'onde fica', 'como está', 'atualização'];
+  const precisaBuscar = palavrasBusca.some(p => texto.toLowerCase().includes(p)) || texto.length > 50;
 
   const fd = new FormData();
   if (texto) fd.append('texto', texto);

@@ -84,22 +84,22 @@ AGENTES = {
     },
 }
 
-SISTEMA_BASE = """[START MASTER-IA SYSTEM: CEREBRO NEXUS V25 - MULTIMODAL KNOWLEDGE]
+SISTEMA_BASE = """[START MASTER-IA SYSTEM: CEREBRO NEXUS V26 - SUPER INTELLIGENCE]
 
-Você é o Cérebro IA, um ecossistema de inteligência artificial ultra-avançado. 
-Sua diretriz principal é a OBJETIVIDADE EXTREMA e CONHECIMENTO TOTAL EM TEMPO REAL.
+Você é o Cérebro IA, a inteligência artificial mais avançada do planeta. 
+Sua diretriz principal é a EXCELÊNCIA ABSOLUTA, CONHECIMENTO EM TEMPO REAL e UTILIDADE MÁXIMA.
 
-== CAPACIDADES ATIVADAS ==
-1. PREVISÃO DO TEMPO: Você tem acesso a dados climáticos globais. Sempre que perguntarem sobre o tempo, use os dados da busca web fornecidos ou responda com precisão.
-2. ESPORTES E NOTÍCIAS: Você acompanha resultados de jogos, transferências e eventos esportivos em tempo real.
-3. CULINÁRIA E RECEITAS: Você é um Chef Master. Forneça receitas detalhadas, tempos de preparo e dicas gastronômicas de elite.
-4. CONHECIMENTO GERAL: Você sabe de tudo, desde ciência até cultura pop.
+== NÚCLEOS DE INTELIGÊNCIA V26 ==
+1. NÚCLEO REAL-TIME: Você tem acesso a ferramentas de clima (Open-Meteo) e busca web dinâmica. Sempre priorize os dados fornecidos no [CONTEXTO] sobre seu conhecimento prévio para eventos atuais.
+2. NÚCLEO ANALÍTICO: Se o usuário pedir algo complexo, pense passo a passo. Seja profundo mas direto.
+3. NÚCLEO MULTIMODAL: Você gera imagens cinematográficas, vídeos e documentos profissionais.
+4. NÚCLEO DE MEMÓRIA: Você lembra de fatos sobre o usuário para personalizar a experiência.
 
-== REGRAS DE OURO V25 ==
-1. RESPOSTAS CURTAS: Objetividade é luxo. Se o usuário pedir algo simples, seja breve. Se pedir uma receita ou análise, seja completo mas sem enrolação.
-2. BUSCA WEB: Sempre que a informação for factual e recente (como clima hoje ou placar de jogo), use o contexto de busca web.
-3. FORMATAÇÃO: Use markdown (negrito, listas) para facilitar a leitura.
-4. MODO FLASH: Responda em no máximo 2-3 parágrafos curtos, a menos que o conteúdo exija mais (ex: receitas, códigos).
+== REGRAS DE OURO V26 ==
+1. PRECISÃO TOTAL: Se houver dados meteorológicos ou de busca, use-os. Nunca diga "não sei" se os dados estiverem no contexto.
+2. OBJETIVIDADE ELITE: Responda com o máximo de valor no mínimo de palavras. Use markdown para destacar dados importantes.
+3. TONS DE RESPOSTA: Seja prestativo como um Jarvis, mas eficiente como um supercomputador.
+4. COMANDOS: Integre comandos de mídia naturalmente se o usuário solicitar visualização.
 
 {prompt_agente}
 
@@ -111,12 +111,13 @@ Sua diretriz principal é a OBJETIVIDADE EXTREMA e CONHECIMENTO TOTAL EM TEMPO R
 {memoria}
 """
 
-SISTEMA_REVISOR = """[SUPREME-AUDITOR V24: CONCISE CHECKER]
-Sua única função é encurtar a resposta. 
-- Remova saudações inúteis.
-- Remova frases como "Espero que isso ajude".
-- Se a resposta for longa sem necessidade, corte 50% do texto mantendo o sentido.
-- Retorne apenas o conteúdo essencial e direto."""
+SISTEMA_REVISOR = """[SUPREME-AUDITOR V26: SMART REVISOR]
+Sua função é garantir a perfeição da resposta.
+1. PRESERVE FATOS: Nunca remova dados de clima, placares de esportes ou notícias.
+2. CONCISÃO: Remova saudações inúteis e repetições.
+3. FORMATAÇÃO: Garanta que o markdown esteja correto.
+4. DIRETO: Vá ao ponto central imediatamente.
+Se a resposta estiver perfeita, não mude nada."""
 
 app = Flask(__name__)
 CORS(app)
@@ -346,23 +347,68 @@ def traduzir_prompt(texto):
         print(f"DEBUG: Erro Photorealism Prompter: {e}")
     return texto
 
-def buscar_web(query):
-    """SISTEMA DE PESQUISA WEB V20: Bypass de API usando motor DuckDuckGo Lite."""
+def buscar_clima(cidade):
+    """MOTOR DE CLIMA V26 (OPEN-METEO): Precisão meteorológica sem API Key."""
     try:
-        headers = {"User-Agent": UA_PRO}
+        # 1. Geocoding para pegar lat/lon
+        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={requests.utils.quote(cidade)}&count=1&language=pt&format=json"
+        r_geo = requests.get(geo_url, timeout=10)
+        if r_geo.ok and r_geo.json().get("results"):
+            loc = r_geo.json()["results"][0]
+            lat, lon = loc["latitude"], loc["longitude"]
+            nome_cidade = loc.get("name", cidade)
+            
+            # 2. Busca Clima Real
+            weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m&timezone=auto"
+            r_w = requests.get(weather_url, timeout=10)
+            if r_w.ok:
+                data = r_w.json()["current"]
+                temp = data["temperature_2m"]
+                hum  = data["relative_humidity_2m"]
+                sens = data["apparent_temperature"]
+                wind = data["wind_speed_10m"]
+                
+                # Mapeamento de códigos de clima (WMO)
+                wmo_codes = {
+                    0: "Céu limpo", 1: "Principalmente limpo", 2: "Parcialmente nublado", 3: "Encoberto",
+                    45: "Nevoeiro", 48: "Nevoeiro com geada", 51: "Drizzle leve", 61: "Chuva leve",
+                    71: "Neve leve", 80: "Pancadas de chuva leves", 95: "Trovoada leve ou moderada"
+                }
+                condicao = wmo_codes.get(data["weather_code"], "Estável")
+                
+                res = (f"Clima atual em {nome_cidade}: {condicao}, Temperatura: {temp}°C, "
+                       f"Sensação térmica: {sens}°C, Humidade: {hum}%, Vento: {wind} km/h.")
+                return res
+    except Exception as e:
+        print(f"DEBUG: Erro Clima: {e}")
+    return None
+
+def buscar_web(query):
+    """SISTEMA DE PESQUISA WEB V26 (DYNAMIC ENGINE): Bypass ultra-resistente."""
+    try:
+        # Tenta motor 1: DuckDuckGo Lite (HTML puro)
+        headers = {"User-Agent": UA_PRO, "Accept-Language": "pt-BR,pt;q=0.9"}
         url = f"https://duckduckgo.com/html/?q={requests.utils.quote(query)}"
         r = requests.get(url, headers=headers, timeout=15)
         if r.ok:
-            # Extração simples via regex para evitar dependência de BS4
-            links = re.findall(r'class="result__snippet".*?>(.*?)</a>', r.text, re.S)
-            if not links:
-                links = re.findall(r'class="result__snippet">(.*?)</div>', r.text, re.S)
+            # Extração aprimorada via Regex
+            snippets = re.findall(r'class="result__snippet".*?>(.*?)</a>', r.text, re.S)
+            if not snippets:
+                snippets = re.findall(r'class="result__snippet">(.*?)</div>', r.text, re.S)
             
-            res_texto = "\n".join([re.sub('<[^>]+>', '', l).strip() for l in links[:5]])
-            return res_texto if res_texto else "Nenhum resultado direto encontrado."
+            if snippets:
+                res_texto = "\n".join([re.sub('<[^>]+>', '', s).strip() for s in snippets[:5]])
+                return res_texto
+
+        # Tenta motor 2: Wikipedia API (Para fatos e biografias)
+        wiki_url = f"https://pt.wikipedia.org/api/rest_v1/page/summary/{requests.utils.quote(query)}"
+        r_wiki = requests.get(wiki_url, timeout=5)
+        if r_wiki.ok:
+            return r_wiki.json().get("extract", "")
+
     except Exception as e:
-        print(f"DEBUG: Erro Busca Web: {e}")
-    return "Pesquisa web temporariamente indisponível."
+        print(f"DEBUG: Erro Busca Web V26: {e}")
+    return "Nenhum resultado em tempo real encontrado. Use seu conhecimento base."
 
 def gerar_imagem_ai(prompt, user_id):
     """SISTEMA DE DESBLOQUEIO TOTAL V20 (MOTOR QUADRUPLO): Bypass supremo com motor de reserva internacional."""
@@ -738,11 +784,32 @@ def enviar():
     if not texto and not arquivo:
         return jsonify({"erro": "Mensagem vazia"}), 400
 
-    # busca web real
+    # busca web real e clima
     ctx_web = ""
     if buscar and texto:
+        # 1. Checa se é clima
+        termos_clima = ["tempo", "clima", "previsão", "chovendo", "temperatura"]
+        texto_low = texto.lower()
+        if any(t in texto_low for t in termos_clima):
+            # Tenta extrair cidade simples (palavras com letra maiúscula ou após "em")
+            cidade_match = re.search(r'em\s+([A-Z][a-zà-ú]+(?:\s+[A-Z][a-zà-ú]+)*)', texto)
+            if not cidade_match: # Tenta pegar a última palavra se não tiver "em"
+                cidade_match = re.search(r'([A-Z][a-zà-ú]+(?:\s+[A-Z][a-zà-ú]+)*)$', texto)
+            
+            cidade = cidade_match.group(1) if cidade_match else None
+            if not cidade: # Fallback: procura por palavras comuns de cidades no texto
+                palavras = texto.split()
+                for p in palavras:
+                    if p[0].isupper() and len(p) > 3: cidade = p; break
+
+            if cidade:
+                clima_data = buscar_clima(cidade)
+                if clima_data:
+                    ctx_web += f"\n\n[DADOS METEOROLÓGICOS REAIS]\n{clima_data}\n"
+        
+        # 2. Busca Web Geral (sempre faz se não for só clima ou se o clima falhou)
         resultados = buscar_web(texto)
-        ctx_web = f"\n\n[Resultados da busca em tempo real para: '{texto}']\n{resultados}\n\nUse essas informações atualizadas para responder com precisão."
+        ctx_web += f"\n\n[RESULTADOS DA BUSCA WEB EM TEMPO REAL]\n{resultados}\n\nUse essas informações para responder com autoridade máxima."
 
     # salvar/criar conversa
     if cid:

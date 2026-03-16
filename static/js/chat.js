@@ -243,6 +243,12 @@ function adicionarMsg(texto, tipo, subtipo = 'texto', arquivoNome = null, comBtn
       <video src="/api/download/${arquivoNome}" class="video-gerado" controls autoplay loop muted></video>
       <br><a href="/api/download/${arquivoNome}?download=1" class="btn-download" target="_blank">📥 Baixar Vídeo</a>
     </div>`;
+  } else if (subtipo === 'musica_gerada' && arquivoNome) {
+    prefixo = '🎵 ';
+    conteudoHtml += `<br><br><div class="audio-gerado-container">
+      <audio controls src="/api/download/${arquivoNome}" class="audio-gerado"></audio>
+      <br><a href="/api/download/${arquivoNome}?download=1" class="btn-download" target="_blank">📥 Baixar Música</a>
+    </div>`;
   }
   
   const textoLimpoParaCopia = texto.replace(/<br>/g, '\n').replace(/<[^>]+>/g, '');

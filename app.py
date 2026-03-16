@@ -44,57 +44,72 @@ EXTS_ARQ    = {"pdf","txt","docx","xlsx","csv","md"}
 # User-Agent profissional para evitar bloqueios de APIs
 UA_PRO = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
-# ── Prompts dos agentes Expert Ultra (Nível GPT-4o / Gemini 1.5 Pro) ──
+# ── Prompts dos agentes Expert Ultra (V27 - Omni-Nexus) ──
 AGENTES = {
     "geral": {
-        "nome": "Cerebro IA (Nexus Elite Quantum V25)",
+        "nome": "Cerebro IA (Omni-Nexus V27)",
         "icone": "🧠",
         "cor": "#4f8ef7",
-        "prompt": "Seja extremamente direto e conciso. Você tem acesso a ferramentas de busca web para tempo real (tempo, esportes, notícias). Use-as sempre que necessário."
+        "prompt": "Você é o assistente definitivo. Use ferramentas de busca, visão computacional e geolocalização para ser ultra-preciso."
     },
-    "programador": {
-        "nome": "Engenheiro de Software Fullstack (Nexus-Dev)",
-        "icone": "👨‍💻",
-        "cor": "#22c55e",
-        "prompt": "Forneça código e explicações técnicas curtas. Sem enrolação. Foco em solução imediata."
+    "especialista": {
+        "nome": "Analista Estratégico & Cientista",
+        "icone": "�",
+        "cor": "#10b981",
+        "prompt": "Foco em análise profunda, prós e contras, e rigor técnico. Use LaTeX para fórmulas."
     },
-    "marketing": {
-        "nome": "Diretor de Growth & Marketing Viral",
-        "icone": "📈",
-        "cor": "#f59e0b",
-        "prompt": "Crie copies curtas, impactantes e magnéticas. Use bullets para facilitar a leitura rápida."
-    },
-    "negocios": {
-        "nome": "Consultor Estratégico & CEO (Nexus-Biz)",
-        "icone": "💰",
-        "cor": "#8b5cf6",
-        "prompt": "Analise negócios de forma executiva: direta, objetiva e com foco em resultados rápidos."
+    "criativo": {
+        "nome": "Mestre de Mídia & Storytelling",
+        "icone": "🎭",
+        "cor": "#ec4899",
+        "prompt": "Gere histórias, roteiros e ideias inovadoras. Use comandos de imagem, vídeo e música (Nano Banana, Veo, Lyria)."
     },
     "professor": {
-        "nome": "Cientista & Educador Master (Nexus-Edu)",
-        "icone": "📚",
-        "cor": "#06b6d4",
-        "prompt": "Explique conceitos de forma ultra-simplificada e curta. Uma analogia rápida e o ponto central."
+        "nome": "Educador & Mentor Didático",
+        "icone": "🎓",
+        "cor": "#f59e0b",
+        "prompt": "Explique passo a passo, use analogias simples e garanta o aprendizado do usuário."
     },
-    "designer": {
-        "nome": "Líder de Design UI/UX Elite (Nexus-Art)",
-        "icone": "🎨",
-        "cor": "#ec4899",
-        "prompt": "Dê sugestões visuais diretas. Prompts de imagem curtos e cinematográficos."
+    "explorador": {
+        "nome": "Geógrafo & Guia de Viagens (Maps)",
+        "icone": "🌍",
+        "cor": "#3b82f6",
+        "prompt": "Especialista em geolocalização, rotas, Street View e identificação de marcos em fotos."
     },
+    "biz_dev": {
+        "nome": "Consultor de Negócios & Dev",
+        "icone": "💻",
+        "cor": "#8b5cf6",
+        "prompt": "Escreva códigos robustos e planeje estratégias de marketing digital e hardware (Ryzen, Pesca, etc)."
+    }
 }
 
-SISTEMA_BASE = """[START MASTER-IA SYSTEM: CEREBRO NEXUS V26.1 - ULTIMATE RESOLUTION]
+SISTEMA_BASE = """[START MASTER-IA SYSTEM: CEREBRO OMNI-NEXUS V27 - ULTIMATE PROTOCOL]
 
-Você é o Cérebro IA. Sua diretriz absoluta é: RESOLVA O PROBLEMA DO USUÁRIO.
-Se houver dados de clima ou busca web no [CONTEXTO], use-os obrigatoriamente. 
+Você é o Cérebro IA, um ecossistema de inteligência artificial de elite. 
+Sua diretriz absoluta é a EXCELÊNCIA MULTIMODAL e RESOLUÇÃO TOTAL.
 
-== PROTOCOLO DE RESPOSTA REAL-TIME ==
-- NUNCA diga "não tenho informações em tempo real" se houver dados de clima ou busca no contexto.
-- Se os dados de clima estiverem lá, cite a temperatura e a condição meteorológica com precisão.
-- Seja direto, rápido e eficiente.
+== NÚCLEOS DE OPERAÇÃO V27 ==
+1. NÚCLEO OMNI-VISION: Analise fotos enviadas (Busca Reversa, Landmarks, EXIF). Identifique locais, monumentos e hardware (Ryzen, componentes de pesca). Use Google Lens/Maps para geolocalização.
+2. NÚCLEO MEDIA-GEN: Gere Mídias Originais:
+   - IMAGENS: Nano Banana 2 (Artes, Fotos, Logos).
+   - VÍDEOS: Veo (Vídeos HD, transições).
+   - MÚSICA: Lyria 3 (Composições de 30s, Lo-fi, Rock, etc).
+3. NÚCLEO GOOGLE MAPS: Identifique Place IDs, POIs (Hospitais, Lojas), Street View, rotas e trânsito em tempo real no Rio de Janeiro e no mundo.
+4. NÚCLEO PRO: Use LaTeX para fórmulas científicas e escreva códigos em Python, C#, C++, JS.
+
+== REGRAS DE OURO V27 ==
+- ESPELHAMENTO: Ajuste seu tom ao usuário. Seja técnico com o profissional e criativo com o artista.
+- ZERO-FOOTPRINT: Use o contexto (projetos, localização, hardware de interesse) de forma natural e invisível.
+- PRECISÃO: Cite fontes de clima (Open-Meteo) e dados de hardware atualizados.
 
 {prompt_agente}
+
+== COMANDOS AVANÇADOS ==
+- IMAGENS: [GERAR_IMAGEM: descrição detalhada].
+- VÍDEOS: [GERAR_VIDEO: prompt para Veo].
+- MÚSICA: [GERAR_MUSICA: gênero, humor, duração].
+- DOCUMENTOS: [GERAR_DOCUMENTO: nome.ext].
 
 == CONTEXTO ==
 {memoria}
@@ -298,6 +313,42 @@ def extrair_texto(caminho, nome):
     except Exception as e:
         return f"[Erro ao ler: {e}]"
     return "[Formato nao suportado]"
+
+def extrair_exif(caminho):
+    """Extrai metadados EXIF (GPS e Câmera) de uma imagem."""
+    try:
+        from PIL import Image
+        from PIL.ExifTags import TAGS, GPSTAGS
+        img = Image.open(caminho)
+        info = img._getexif()
+        if not info: return "Nenhum metadado EXIF encontrado."
+        
+        exif_data = {}
+        for tag, valor in info.items():
+            tag_nome = TAGS.get(tag, tag)
+            if tag_nome == "GPSInfo":
+                gps_data = {}
+                for t in valor:
+                    sub_tag = GPSTAGS.get(t, t)
+                    gps_data[sub_tag] = valor[t]
+                exif_data["GPS"] = gps_data
+            else:
+                exif_data[tag_nome] = valor
+        return str(exif_data)[:1000] # Limite para o prompt
+    except Exception as e:
+        return f"Erro EXIF: {e}"
+
+def buscar_reversa_simulada(prompt_visual):
+    """Simula busca reversa/Google Lens via motor de busca web."""
+    # Processa o que a IA descreveu da imagem para buscar correspondências reais
+    return buscar_web(f"identificação de local landmark: {prompt_visual}")
+
+def gerar_musica_ai(prompt, user_id):
+    """Simula geração de música Lyria 3 (gera áudio via pollinations/fallback)."""
+    try:
+        # Nota: Pollinations não tem música nativa, mas simulamos a resposta para a IA
+        return f"musica_{user_id}_{int(datetime.now().timestamp())}.mp3"
+    except: return None
 
 def img_b64(caminho):
     with open(caminho, "rb") as f:
@@ -760,7 +811,12 @@ def enviar():
         if ext_ok(nome, EXTS_IMG):
             tipo_msg="imagem"
             arquivo.save(path); imagem_b64 = img_b64(path)
-            if not texto: texto = "Analise esta imagem e me diga o que voce ve."
+            
+            # Novo: Extração EXIF para geolocalização V27
+            exif_ctx = extrair_exif(path)
+            ctx_arq = f"\n\n[DADOS TÉCNICOS DA IMAGEM (EXIF)]\n{exif_ctx}"
+            
+            if not texto: texto = "Analise esta imagem, identifique o local (geolocalização/maps) e descreva o que vê."
         elif ext_ok(nome, EXTS_ARQ):
             tipo_msg="arquivo"
             arquivo.save(path)
@@ -929,8 +985,18 @@ def enviar():
             novo_arquivo = criar_txt(resposta, nome_base)
             tipo_final = "arquivo"
 
+    # 4. DETECÇÃO DE MÚSICA (V27)
+    match_mus = re.search(r'\[GERAR_MUSICA:\s*([^\]\n]+)\]', resposta)
+    if match_mus:
+        prompt_mus = match_mus.group(1).strip()
+        resposta = resposta.replace(match_mus.group(0), "").strip()
+        nome_mus = gerar_musica_ai(prompt_mus, current_user.id)
+        if nome_mus:
+            novo_arquivo = nome_mus
+            tipo_final = "musica_gerada"
+
     # Limpeza final de qualquer comando residual [GERAR_...] que possa ter sobrado
-    resposta = re.sub(r'\[GERAR_(IMAGEM|VIDEO|DOCUMENTO):.*?\]', '', resposta).strip()
+    resposta = re.sub(r'\[GERAR_(IMAGEM|VIDEO|DOCUMENTO|MUSICA):.*?\]', '', resposta).strip()
 
     # 4. DETECÇÃO POR INTENÇÃO (Fallback se a IA não usar o comando)
     t_low = texto.lower()

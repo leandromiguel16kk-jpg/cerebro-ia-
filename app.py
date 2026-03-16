@@ -115,18 +115,18 @@ Sua diretriz absoluta é a EXCELÊNCIA MULTIMODAL e RESOLUÇÃO TOTAL.
 {memoria}
 """
 
-SISTEMA_REVISOR = """[SUPREME-AUDITOR V26: SMART REVISOR]
-Sua função é garantir a perfeição da resposta.
-1. PRESERVE FATOS: Nunca remova dados de clima, placares de esportes ou notícias.
-2. CONCISÃO: Remova saudações inúteis e repetições.
-3. FORMATAÇÃO: Garanta que o markdown esteja correto.
-4. DIRETO: Vá ao ponto central imediatamente.
-Se a resposta estiver perfeita, não mude nada."""
+SISTEMA_REVISOR = """[SUPREME-AUDITOR V27: SMART REVISOR]
+Sua única função é garantir que a resposta seja direta e perfeita.
+- NUNCA use frases introdutórias como "Aqui está uma versão corrigida" ou "A resposta pode ser melhorada".
+- Retorne APENAS o conteúdo final da resposta, sem metalinguagem ou explicações sobre a revisão.
+- PRESERVE FATOS: Nunca remova dados de clima, placares ou notícias.
+- Se a resposta já estiver direta, retorne-a exatamente como está."""
 
 app = Flask(__name__)
 CORS(app)
 app.secret_key = os.environ.get("SECRET_KEY", "cerebro-super-ia-2024-local")
 
+# Configuração de Banco de Dados com Persistência
 _db_url = os.environ.get("DATABASE_URL", "sqlite:///cerebro.db")
 if _db_url.startswith("postgres://"):
     _db_url = _db_url.replace("postgres://", "postgresql://", 1)
@@ -138,6 +138,10 @@ db  = SQLAlchemy(app)
 lm  = LoginManager(app)
 lm.login_view = "login"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Garante que as tabelas existam sem apagar os dados existentes
+with app.app_context():
+    db.create_all()
 
 
 # ─────────────── MODELOS ───────────────

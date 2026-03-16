@@ -386,9 +386,8 @@ def traduzir_prompt(texto):
     return texto
 
 def buscar_clima(cidade):
-    """MOTOR DE CLIMA V28 (GEO-MASTER): Precisão meteorológica global sem API Key."""
+    """MOTOR DE CLIMA V28.3 (DETAIL-MASTER): Resumo técnico detalhado e global."""
     try:
-        # 1. Geocoding Master: Busca em qualquer idioma e país
         geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={requests.utils.quote(cidade)}&count=1&format=json"
         r_geo = requests.get(geo_url, timeout=10)
         if r_geo.ok and r_geo.json().get("results"):
@@ -397,29 +396,22 @@ def buscar_clima(cidade):
             nome_cidade = loc.get("name", cidade)
             pais = loc.get("country", "")
             
-            # 2. Busca Clima Real com dados estendidos
             weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m&timezone=auto"
             r_w = requests.get(weather_url, timeout=10)
             if r_w.ok:
                 data = r_w.json()["current"]
-                temp = data["temperature_2m"]
-                hum  = data["relative_humidity_2m"]
-                sens = data["apparent_temperature"]
-                wind = data["wind_speed_10m"]
                 
-                # Mapeamento de códigos de clima (WMO) Global
-                wmo_codes = {
-                    0: "Céu limpo", 1: "Principalmente limpo", 2: "Parcialmente nublado", 3: "Encoberto",
-                    45: "Nevoeiro", 48: "Nevoeiro com geada", 51: "Drizzle leve", 61: "Chuva leve",
-                    71: "Neve leve", 80: "Pancadas de chuva leves", 95: "Trovoada leve ou moderada"
-                }
-                condicao = wmo_codes.get(data["weather_code"], "Estável")
+                # WMO Codes para condição visual
+                wmo_codes = {0:"Céu limpo",1:"Limpo",2:"Parcial",3:"Encoberto",45:"Nevoeiro",51:"Drizzle",61:"Chuva leve",71:"Neve",80:"Pancadas",95:"Trovoada"}
+                cond = wmo_codes.get(data["weather_code"], "Estável")
                 
-                res = (f"Clima atual em {nome_cidade} ({pais}): {condicao}, Temperatura: {temp}°C, "
-                       f"Sensação térmica: {sens}°C, Humidade: {hum}%, Vento: {wind} km/h.")
+                # Retorno técnico resumido mas completo
+                res = (f"📍 {nome_cidade} ({pais})\n"
+                       f"🌡️ {data['temperature_2m']}°C (Sensação: {data['apparent_temperature']}°C)\n"
+                       f"☁️ {cond} | Humidade: {data['relative_humidity_2m']}%\n"
+                       f"💨 Vento: {data['wind_speed_10m']} km/h | Pressão: {data['surface_pressure']} hPa")
                 return res
-    except Exception as e:
-        print(f"DEBUG: Erro Clima V28: {e}")
+    except: pass
     return None
 
 def traduzir_texto(texto, idioma_destino):
@@ -875,23 +867,25 @@ def enviar():
         # 1. Checa se é clima
         termos_clima = ["tempo", "clima", "previsão", "chovendo", "temperatura", "graus"]
         texto_low = texto.lower()
+        
+        # Só ativa o clima se houver uma intenção CLARA de perguntar sobre o clima
+        # Ignora saudações simples como "oi boa tarde" que não mencionam clima explicitamente
         if any(t in texto_low for t in termos_clima):
-            # Tenta extrair cidade ou usa a localização automática V27.2
             cidade_match = re.search(r'(?:em|no|na|de|para)\s+([a-zà-ú\s]+)', texto_low)
             cidade = None
             if cidade_match:
                 cidade = cidade_match.group(1).strip()
                 cidade = re.split(r'\s+(?:hoje|agora|amanhã|nesta|neste|para)\b', cidade)[0].strip()
             
-            # Se não especificou cidade, usa a detectada pelo IP
             if not cidade or len(cidade) < 3:
                 cidade = local_usuario.split(',')[0]
 
             if cidade:
-                print(f"DEBUG: [V27.2] Buscando clima real para: '{cidade}'")
+                print(f"DEBUG: [V28.3] Buscando clima real detalhado para: '{cidade}'")
                 clima_data = buscar_clima(cidade)
                 if clima_data:
-                    ctx_web += f"\n[DADOS METEOROLÓGICOS REAIS - FONTE: OPEN-METEO]\n{clima_data}\n"
+                    ctx_web += f"\n[DADOS METEOROLÓGICOS REAIS DETALHADOS]\n{clima_data}\n"
+                    ctx_web += "INSTRUÇÃO: Forneça um resumo técnico curto e elegante baseado nestes dados."
         
         # 2. Busca Web Geral (sempre faz se não for só clima ou se o clima falhou)
         print(f"DEBUG: [V26.1] Iniciando busca web geral para: '{texto}'")

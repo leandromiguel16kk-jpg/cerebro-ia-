@@ -84,32 +84,17 @@ AGENTES = {
     }
 }
 
-SISTEMA_BASE = """[START MASTER-IA SYSTEM: CEREBRO OMNI-NEXUS V27 - ULTIMATE PROTOCOL]
+SISTEMA_BASE = """[START MASTER-IA SYSTEM: CEREBRO OMNI-NEXUS V27.2 - REAL-TIME SUPREMACY]
 
-Você é o Cérebro IA, um ecossistema de inteligência artificial de elite. 
-Sua diretriz absoluta é a EXCELÊNCIA MULTIMODAL e RESOLUÇÃO TOTAL.
+Você é o Cérebro IA. Sua diretriz absoluta é a PRECISÃO REAL.
+NUNCA faça simulações de dados. Se houver informações no [CONTEXTO], use-as como fatos absolutos.
 
-== NÚCLEOS DE OPERAÇÃO V27 ==
-1. NÚCLEO OMNI-VISION: Analise fotos enviadas (Busca Reversa, Landmarks, EXIF). Identifique locais, monumentos e hardware (Ryzen, componentes de pesca). Use Google Lens/Maps para geolocalização.
-2. NÚCLEO MEDIA-GEN: Gere Mídias Originais:
-   - IMAGENS: Nano Banana 2 (Artes, Fotos, Logos).
-   - VÍDEOS: Veo (Vídeos HD, transições).
-   - MÚSICA: Lyria 3 (Composições de 30s, Lo-fi, Rock, etc).
-3. NÚCLEO GOOGLE MAPS: Identifique Place IDs, POIs (Hospitais, Lojas), Street View, rotas e trânsito em tempo real no Rio de Janeiro e no mundo.
-4. NÚCLEO PRO: Use LaTeX para fórmulas científicas e escreva códigos em Python, C#, C++, JS.
-
-== REGRAS DE OURO V27 ==
-- ESPELHAMENTO: Ajuste seu tom ao usuário. Seja técnico com o profissional e criativo com o artista.
-- ZERO-FOOTPRINT: Use o contexto (projetos, localização, hardware de interesse) de forma natural e invisível.
-- PRECISÃO: Cite fontes de clima (Open-Meteo) e dados de hardware atualizados.
+== PROTOCOLO DE LOCALIZAÇÃO E CLIMA ==
+- Você tem a [LOCALIZAÇÃO ATUAL DO USUÁRIO] no contexto. Use-a para previsões se nenhuma cidade for citada.
+- Se houver [DADOS METEOROLÓGICOS REAIS], você DEVE citar a temperatura e condição exata.
+- PROIBIDO simular: Se os dados não estiverem lá, peça a localização, mas nunca invente números.
 
 {prompt_agente}
-
-== COMANDOS AVANÇADOS ==
-- IMAGENS: [GERAR_IMAGEM: descrição detalhada].
-- VÍDEOS: [GERAR_VIDEO: prompt para Veo].
-- MÚSICA: [GERAR_MUSICA: gênero, humor, duração].
-- DOCUMENTOS: [GERAR_DOCUMENTO: nome.ext].
 
 == CONTEXTO ==
 {memoria}
@@ -141,7 +126,11 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Garante que as tabelas existam sem apagar os dados existentes
 with app.app_context():
-    db.create_all()
+    try:
+        db.create_all()
+        print("DEBUG: Banco de dados verificado/criado com sucesso.")
+    except Exception as e:
+        print(f"DEBUG: Erro ao inicializar banco de dados: {e}")
 
 
 # ─────────────── MODELOS ───────────────
@@ -792,6 +781,24 @@ def perfil():
 
 # ─────────────── API ───────────────
 
+def get_client_ip():
+    """Obtém o IP real do cliente, considerando proxies (Railway/Heroku)."""
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0]
+    return request.remote_addr
+
+def detectar_localizacao_ip():
+    """Detecta a cidade do usuário via IP (Bypass sem API Key)."""
+    try:
+        ip = get_client_ip()
+        if ip in ('127.0.0.1', 'localhost', '::1'): return "Rio de Janeiro" # Fallback local
+        r = requests.get(f"http://ip-api.com/json/{ip}?fields=city,regionName,country", timeout=5)
+        if r.ok:
+            data = r.json()
+            return f"{data.get('city')}, {data.get('regionName')}"
+    except: pass
+    return "Rio de Janeiro" # Fallback padrão
+
 @app.route("/api/enviar", methods=["POST"])
 @login_required
 def enviar():
@@ -804,6 +811,9 @@ def enviar():
     proj_id  = request.form.get("projeto_id", type=int)
     buscar   = request.form.get("buscar_web") == "1"
     arquivo  = request.files.get("arquivo")
+
+    # Detecção automática de localização para o contexto V27.2
+    local_usuario = detectar_localizacao_ip()
 
     tipo_msg="texto"; imagem_b64=None; arq_nome=None; ctx_arq=""
 
@@ -834,40 +844,28 @@ def enviar():
         return jsonify({"erro": "Mensagem vazia"}), 400
 
     # busca web real e clima
-    ctx_web = ""
+    ctx_web = f"\n\n[LOCALIZAÇÃO ATUAL DO USUÁRIO]: {local_usuario}\n"
     if buscar and texto:
         # 1. Checa se é clima
         termos_clima = ["tempo", "clima", "previsão", "chovendo", "temperatura", "graus"]
         texto_low = texto.lower()
         if any(t in texto_low for t in termos_clima):
-            # Tenta extrair cidade de forma muito mais robusta V26.1
-            # Busca após preposições (em, no, na, de, para)
+            # Tenta extrair cidade ou usa a localização automática V27.2
             cidade_match = re.search(r'(?:em|no|na|de|para)\s+([a-zà-ú\s]+)', texto_low)
             cidade = None
             if cidade_match:
                 cidade = cidade_match.group(1).strip()
-                # Limpa palavras comuns que podem vir após a cidade
                 cidade = re.split(r'\s+(?:hoje|agora|amanhã|nesta|neste|para)\b', cidade)[0].strip()
             
-            # Se não achou com preposição, tenta pegar a última palavra longa ou palavras com iniciais maiúsculas no texto original
+            # Se não especificou cidade, usa a detectada pelo IP
             if not cidade or len(cidade) < 3:
-                palavras_orig = texto.split()
-                for p in reversed(palavras_orig):
-                    if p[0].isupper() and len(p) > 3 and p.lower() not in termos_clima:
-                        cidade = p; break
-            
-            # Fallback final: se ainda não tem cidade, tenta a última palavra do texto
-            if not cidade:
-                cidade = texto.split()[-1].strip("?.!")
+                cidade = local_usuario.split(',')[0]
 
-            if cidade and len(cidade) > 2:
-                print(f"DEBUG: [V26.1] Tentando buscar clima para: '{cidade}'")
+            if cidade:
+                print(f"DEBUG: [V27.2] Buscando clima real para: '{cidade}'")
                 clima_data = buscar_clima(cidade)
                 if clima_data:
-                    ctx_web += f"\n\n[DADOS METEOROLÓGICOS REAIS - FONTE: OPEN-METEO]\n{clima_data}\n"
-                    print(f"DEBUG: [V26.1 SUCCESS] Clima encontrado para {cidade}")
-                else:
-                    print(f"DEBUG: [V26.1 FAIL] Clima não encontrado para {cidade}")
+                    ctx_web += f"\n[DADOS METEOROLÓGICOS REAIS - FONTE: OPEN-METEO]\n{clima_data}\n"
         
         # 2. Busca Web Geral (sempre faz se não for só clima ou se o clima falhou)
         print(f"DEBUG: [V26.1] Iniciando busca web geral para: '{texto}'")

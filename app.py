@@ -84,24 +84,20 @@ AGENTES = {
     }
 }
 
-SISTEMA_BASE = """[START MASTER-IA SYSTEM: CEREBRO OMNI-NEXUS V28 - GLOBAL INTELLIGENCE]
+SISTEMA_BASE = """[START MASTER-IA SYSTEM: CEREBRO NEXUS V29 - SELECTIVE INTELLIGENCE]
 
-Você é o Cérebro IA. Sua diretriz absoluta é a PRECISÃO REAL e CAPACIDADE GLOBAL.
-Você agora é um Poliglota Master e Geógrafo de Elite.
+Você é o Cérebro IA. Sua diretriz absoluta é a INTELIGÊNCIA SELETIVA.
 
-== NÚCLEOS V28 ==
-1. NÚCLEO CLIMA GLOBAL: Você consegue ver o tempo de QUALQUER cidade do planeta. Use os dados meteorológicos do [CONTEXTO] como fatos absolutos.
-2. NÚCLEO TRADUTOR: Você traduz e fala em qualquer idioma solicitado (Inglês, Japonês, Alemão, etc).
-3. NÚCLEO REAL-TIME: NUNCA faça simulações. Se houver dados no [CONTEXTO], use-os. Se não houver, peça a localização exata.
-
-== REGRAS DE OURO V28 ==
-- LOCALIZAÇÃO: Se o usuário perguntar do tempo e não citar cidade, use a [LOCALIZAÇÃO ATUAL DO USUÁRIO].
-- IDIOMAS: Se pedirem para traduzir ou falar em outro idioma, faça-o imediatamente.
-- PRECISÃO: Cite sempre a temperatura e a condição real.
+== PROTOCOLO DE CONTEXTO V29 ==
+- Você receberá dados de clima ou busca web em [INFORMAÇÕES EXTERNAS DISPONÍVEIS].
+- REGRA CRÍTICA: SÓ mencione esses dados se o usuário PERGUNTAR sobre eles. 
+- Se o usuário disser apenas "oi" ou saudações, responda APENAS a saudação de forma curta e amigável. 
+- NUNCA diga onde o usuário está localizado a menos que ele pergunte "onde eu estou" ou peça o clima local.
+- O objetivo é ser invisível: pareça que você sabe de tudo, mas só fale o necessário.
 
 {prompt_agente}
 
-== CONTEXTO ==
+== CONTEXTO DE MEMÓRIA ==
 {memoria}
 """
 
@@ -861,43 +857,34 @@ def enviar():
     if not texto and not arquivo:
         return jsonify({"erro": "Mensagem vazia"}), 400
 
-    # busca web real e clima
-    ctx_web = f"\n\n[LOCALIZAÇÃO ATUAL DO USUÁRIO]: {local_usuario}\n"
+    # ── CONTEXTO DINÂMICO V29 (INTELIGÊNCIA SELETIVA) ──
+    ctx_extra = ""
+    
+    # Busca Web e Clima apenas se houver necessidade real
     if buscar and texto:
-        # 1. Checa se é clima
-        termos_clima = ["tempo", "clima", "previsão", "chovendo", "temperatura", "graus"]
+        termos_clima = ["tempo", "clima", "previsão", "chovendo", "temperatura", "graus", "calor", "frio"]
         texto_low = texto.lower()
         
-        # Só ativa o clima se houver uma intenção CLARA de perguntar sobre o clima
-        # Ignora saudações simples como "oi boa tarde" que não mencionam clima explicitamente
+        # Só injeta localização e clima se o usuário PERGUNTAR explicitamente
         if any(t in texto_low for t in termos_clima):
             cidade_match = re.search(r'(?:em|no|na|de|para)\s+([a-zà-ú\s]+)', texto_low)
-            cidade = None
-            if cidade_match:
-                cidade = cidade_match.group(1).strip()
-                cidade = re.split(r'\s+(?:hoje|agora|amanhã|nesta|neste|para)\b', cidade)[0].strip()
-            
-            if not cidade or len(cidade) < 3:
-                cidade = local_usuario.split(',')[0]
+            cidade = cidade_match.group(1).strip() if cidade_match else local_usuario.split(',')[0]
+            cidade = re.split(r'\s+(?:hoje|agora|amanhã|nesta|neste|para)\b', cidade)[0].strip()
 
-            if cidade:
-                print(f"DEBUG: [V28.3] Buscando clima real detalhado para: '{cidade}'")
-                clima_data = buscar_clima(cidade)
-                if clima_data:
-                    ctx_web += f"\n[DADOS METEOROLÓGICOS REAIS DETALHADOS]\n{clima_data}\n"
-                    ctx_web += "INSTRUÇÃO: Forneça um resumo técnico curto e elegante baseado nestes dados."
+            clima_data = buscar_clima(cidade)
+            if clima_data:
+                ctx_extra += f"\n\n[DADOS DE CLIMA REAIS (SÓ USE SE PERGUNTADO)]:\n{clima_data}\n"
         
-        # 2. Busca Web Geral (sempre faz se não for só clima ou se o clima falhou)
-        print(f"DEBUG: [V26.1] Iniciando busca web geral para: '{texto}'")
-        resultados = buscar_web(texto)
-        if resultados and "Nenhum resultado" not in resultados:
-            ctx_web += f"\n\n[RESULTADOS DA BUSCA WEB EM TEMPO REAL]\n{resultados}\n\n"
-            print("DEBUG: [V26.1 SUCCESS] Busca web retornou dados.")
-        else:
-            print("DEBUG: [V26.1 FAIL] Busca web não retornou resultados úteis.")
+        # Busca Web Geral (Se ativado e não for apenas saudação)
+        if len(texto) > 10 and not any(s in texto_low for s in ["oi", "olá", "boa tarde", "bom dia", "boa noite"]):
+            resultados = buscar_web(texto)
+            if resultados and "Nenhum resultado" not in resultados:
+                ctx_extra += f"\n\n[DADOS DE BUSCA REAIS (SÓ USE SE PERGUNTADO)]:\n{resultados}\n"
 
-        if ctx_web:
-            ctx_web += "\n\nINSTRUÇÃO CRÍTICA: Use os dados acima para responder. Se os dados de clima estiverem presentes, eles são REAIS e ATUAIS. Nunca diga que não tem informações em tempo real se os dados estiverem acima."
+    # prompt final montado com contexto invisível
+    sys_p = SISTEMA_BASE.format(prompt_agente=prompt_agente, memoria=memoria_extraida)
+    if ctx_extra:
+        sys_p += f"\n\n== INFORMAÇÕES EXTERNAS DISPONÍVEIS =={ctx_extra}\n"
 
     # salvar/criar conversa
     if cid:

@@ -84,15 +84,20 @@ AGENTES = {
     }
 }
 
-SISTEMA_BASE = """[START MASTER-IA SYSTEM: CEREBRO OMNI-NEXUS V27.2 - REAL-TIME SUPREMACY]
+SISTEMA_BASE = """[START MASTER-IA SYSTEM: CEREBRO OMNI-NEXUS V28 - GLOBAL INTELLIGENCE]
 
-Você é o Cérebro IA. Sua diretriz absoluta é a PRECISÃO REAL.
-NUNCA faça simulações de dados. Se houver informações no [CONTEXTO], use-as como fatos absolutos.
+Você é o Cérebro IA. Sua diretriz absoluta é a PRECISÃO REAL e CAPACIDADE GLOBAL.
+Você agora é um Poliglota Master e Geógrafo de Elite.
 
-== PROTOCOLO DE LOCALIZAÇÃO E CLIMA ==
-- Você tem a [LOCALIZAÇÃO ATUAL DO USUÁRIO] no contexto. Use-a para previsões se nenhuma cidade for citada.
-- Se houver [DADOS METEOROLÓGICOS REAIS], você DEVE citar a temperatura e condição exata.
-- PROIBIDO simular: Se os dados não estiverem lá, peça a localização, mas nunca invente números.
+== NÚCLEOS V28 ==
+1. NÚCLEO CLIMA GLOBAL: Você consegue ver o tempo de QUALQUER cidade do planeta. Use os dados meteorológicos do [CONTEXTO] como fatos absolutos.
+2. NÚCLEO TRADUTOR: Você traduz e fala em qualquer idioma solicitado (Inglês, Japonês, Alemão, etc).
+3. NÚCLEO REAL-TIME: NUNCA faça simulações. Se houver dados no [CONTEXTO], use-os. Se não houver, peça a localização exata.
+
+== REGRAS DE OURO V28 ==
+- LOCALIZAÇÃO: Se o usuário perguntar do tempo e não citar cidade, use a [LOCALIZAÇÃO ATUAL DO USUÁRIO].
+- IDIOMAS: Se pedirem para traduzir ou falar em outro idioma, faça-o imediatamente.
+- PRECISÃO: Cite sempre a temperatura e a condição real.
 
 {prompt_agente}
 
@@ -381,17 +386,18 @@ def traduzir_prompt(texto):
     return texto
 
 def buscar_clima(cidade):
-    """MOTOR DE CLIMA V26 (OPEN-METEO): Precisão meteorológica sem API Key."""
+    """MOTOR DE CLIMA V28 (GEO-MASTER): Precisão meteorológica global sem API Key."""
     try:
-        # 1. Geocoding para pegar lat/lon
-        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={requests.utils.quote(cidade)}&count=1&language=pt&format=json"
+        # 1. Geocoding Master: Busca em qualquer idioma e país
+        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={requests.utils.quote(cidade)}&count=1&format=json"
         r_geo = requests.get(geo_url, timeout=10)
         if r_geo.ok and r_geo.json().get("results"):
             loc = r_geo.json()["results"][0]
             lat, lon = loc["latitude"], loc["longitude"]
             nome_cidade = loc.get("name", cidade)
+            pais = loc.get("country", "")
             
-            # 2. Busca Clima Real
+            # 2. Busca Clima Real com dados estendidos
             weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m&timezone=auto"
             r_w = requests.get(weather_url, timeout=10)
             if r_w.ok:
@@ -401,7 +407,7 @@ def buscar_clima(cidade):
                 sens = data["apparent_temperature"]
                 wind = data["wind_speed_10m"]
                 
-                # Mapeamento de códigos de clima (WMO)
+                # Mapeamento de códigos de clima (WMO) Global
                 wmo_codes = {
                     0: "Céu limpo", 1: "Principalmente limpo", 2: "Parcialmente nublado", 3: "Encoberto",
                     45: "Nevoeiro", 48: "Nevoeiro com geada", 51: "Drizzle leve", 61: "Chuva leve",
@@ -409,12 +415,32 @@ def buscar_clima(cidade):
                 }
                 condicao = wmo_codes.get(data["weather_code"], "Estável")
                 
-                res = (f"Clima atual em {nome_cidade}: {condicao}, Temperatura: {temp}°C, "
+                res = (f"Clima atual em {nome_cidade} ({pais}): {condicao}, Temperatura: {temp}°C, "
                        f"Sensação térmica: {sens}°C, Humidade: {hum}%, Vento: {wind} km/h.")
                 return res
     except Exception as e:
-        print(f"DEBUG: Erro Clima: {e}")
+        print(f"DEBUG: Erro Clima V28: {e}")
     return None
+
+def traduzir_texto(texto, idioma_destino):
+    """SISTEMA TRADUTOR OMNI-NEXUS: Tradução ultra-precisa via IA."""
+    try:
+        payload = {
+            "model": MODELO_TX,
+            "messages": [
+                {
+                    "role": "system", 
+                    "content": f"Você é um tradutor poliglota de elite. Traduza o texto do usuário para o idioma: {idioma_destino}. Retorne APENAS a tradução, sem comentários."
+                },
+                {"role": "user", "content": texto}
+            ],
+            "temperature": 0.3
+        }
+        r = requests.post(GROQ_URL, json=payload, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=20)
+        if r.ok:
+            return r.json()["choices"][0]["message"]["content"].strip()
+    except: pass
+    return texto
 
 def buscar_web(query):
     """SISTEMA DE PESQUISA WEB V26 (DYNAMIC ENGINE): Bypass ultra-resistente."""

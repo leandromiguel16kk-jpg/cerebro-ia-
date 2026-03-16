@@ -486,25 +486,10 @@ function toggleTTS() {
   if (!ttsAtivo && window.speechSynthesis) window.speechSynthesis.cancel();
 }
 
+// ── VOZ (TTS) Avançado V28 ──
 function falarTexto(btn) {
-    const texto = btn.getAttribute('data-texto');
-    if (!texto) return;
-
-    if (window.speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
-        btn.classList.remove('falando');
-        return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(texto);
-    utterance.lang = 'pt-BR';
-    utterance.rate = 1.0;
-
-    utterance.onstart = () => btn.classList.add('falando');
-    utterance.onend = () => btn.classList.remove('falando');
-    utterance.onerror = () => btn.classList.remove('falando');
-
-    window.speechSynthesis.speak(utterance);
+  const texto = btn.getAttribute('data-texto');
+  falarTextoStr(texto, btn);
 }
 
 function copiarTexto(btn) {
@@ -530,20 +515,28 @@ function removerEstadoFalando() {
   });
 }
 
-function falarTextoStr(texto, callback = null) {
+function falarTextoStr(texto, btn = null) {
   if (!window.speechSynthesis) return;
-  const texto_limpo = texto.replace(/[#*`_\[\]()]/g, ' ').substring(0, 2000);
-  const utterance = new SpeechSynthesisUtterance(texto_limpo);
-  utterance.lang = 'pt-BR';
-  utterance.rate = 1.1;
-  utterance.pitch = 1.0;
+  window.speechSynthesis.cancel();
   
-  utterance.onend = () => { if (callback) callback(); };
-  utterance.onerror = () => { if (callback) callback(); };
+  const utterance = new SpeechSynthesisUtterance(texto);
+  
+  // Detecção de Idioma V28 (Básico via Regex/Palavras)
+  let lang = 'pt-BR';
+  const t = texto.toLowerCase();
+  if (t.includes('the ') || t.includes('is ') || t.includes('welcome')) lang = 'en-US';
+  else if (t.includes('hola') || t.includes('buenos')) lang = 'es-ES';
+  else if (t.includes('bonjour')) lang = 'fr-FR';
+  else if (t.includes('ciao')) lang = 'it-IT';
+  else if (t.includes('hallo') || t.includes('danke')) lang = 'de-DE';
+  
+  utterance.lang = lang;
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
 
-  const vozes = window.speechSynthesis.getVoices();
-  const vozPT = vozes.find(v => v.lang.startsWith('pt'));
-  if (vozPT) utterance.voice = vozPT;
+  if (btn) btn.classList.add('falando');
+  utterance.onend = () => { if (btn) btn.classList.remove('falando'); };
+  
   window.speechSynthesis.speak(utterance);
 }
 
